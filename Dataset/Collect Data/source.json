@@ -1,0 +1,46 @@
+{
+    "includeNestedComments": true,
+    "resultsLimit": 10000,
+    "startUrls": [
+        {
+            "url": "https://web.facebook.com/groups/1538410943776077/?multi_permalinks=1725064731777363&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/rrr999com/posts/pfbid0GpQhXDKgxcCRRUS7oxTMfWQAWgqqD3YU822Dv2oqbYaxFiuwiB4CdVxncSD83Ym3l",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid0v43FvCr3JrAzUmoZuLhMHdNN9GtzDwB4X5FxrM4Mx8HoXXoY5sBs6eA8g8e7eKrcl&id=61565345612667",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid0efuHncR7TWei29XuSKnNkb2q82enTRLQonBUzwCHQn3z4TM6bbkcEFgWP8wM97eJl&id=61577647337986",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid0aLAzRTkbZpAogZ7uy5CfBJUhuLJupkcwr8mbMXVyZLBbcFHmWPByEzRvSEPhSfrzl&id=61565345612667",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/Remi101APK/posts/pfbid0mBLDKo984h5sCjLqTD55zeAV7qmXYjFbbkVAZVQ7divtgTfe8xqz7rLpBSqgKoGXl",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/slot898terpercaya/posts/pfbid033CAS3VuGFpwuXSx13FWewdbNXsYj9W854fiMxqMTHJTL2GL957ei7xZj2Ch9bqo6l",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/666129919335029/?multi_permalinks=704105645537456&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid0aLAzRTkbZpAogZ7uy5CfBJUhuLJupkcwr8mbMXVyZLBbcFHmWPByEzRvSEPhSfrzl&id=61565345612667",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid02Q6qJB9NtJVnzDuLiDZFg4qyws6hyMBf1eGPVwJF5R1brYgngnk66VhLwsaV21jQYl&id=61564267667341",
+            "method": "GET"
+        }
+    ]
+}
