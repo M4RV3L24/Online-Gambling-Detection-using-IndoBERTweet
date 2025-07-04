@@ -41,6 +41,54 @@
         {
             "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid02Q6qJB9NtJVnzDuLiDZFg4qyws6hyMBf1eGPVwJF5R1brYgngnk66VhLwsaV21jQYl&id=61564267667341",
             "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1092466069036408/?multi_permalinks=1257735005842846&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1629366961346367/?multi_permalinks=1769426444007084&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/698224196307269/?multi_permalinks=708880635241625&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/698224196307269/?multi_permalinks=711621274967561&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/2129384837457455/?multi_permalinks=2314209198975017&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid0KV3w1RffNcN8vnbU9Bq12A3WvLX8iWsDvFwhiwSn22LDBZRRTYYBzUYJPrWA47mVl&id=100078915247652",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid0Lf674TE9ubR3DTR1KWjDJ7HrdCeqQ9RVPRAqyDfcy4N2xhPmaEExj8NeKx7sEEQKl&id=100084679338110",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/698224196307269?multi_permalinks=711621274967561&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/2129384837457455/?multi_permalinks=2312464945816109&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/532920319383361/?multi_permalinks=703294602345931&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/permalink.php?story_fbid=pfbid031VSJZ3yuAryyNZdC76z9Hxjb6DBP5acAnLwr4MhPHK4kFTERoNN3tvCgTGisCCpRl&id=61559921653745",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/532920319383361/?multi_permalinks=710754024933322&hoisted_section_header_type=recently_seen",
+            "method": "GET"
         }
     ]
 }
