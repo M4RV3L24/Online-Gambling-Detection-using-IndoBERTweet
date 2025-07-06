@@ -1,0 +1,202 @@
+{
+    "includeNestedComments": true,
+    "resultsLimit": 100000,
+    "startUrls": [
+        {
+            "url": "https://web.facebook.com/groups/736126269769945/posts/23922287364060508/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/736126269769945/posts/23940561488899762",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/736126269769945/posts/9719693718079777",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/736126269769945/posts/9362778487104637/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/736126269769945/posts/9757600557622426/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/736126269769945/?multi_permalinks=9787504051298743&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/2067126220395927/?multi_permalinks=2184975295277685&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/2067126220395927/posts/2077002256074990/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/2067126220395927/posts/2202481523527062/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/?multi_permalinks=715788768038329&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/409184221677461/?multi_permalinks=764106819518531&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/?multi_permalinks=720418364242036&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/posts/645405291743344/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/posts/692211183729421/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/posts/712672328349973/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/252006458004726/?multi_permalinks=510895648782471&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/932250033462511/?multi_permalinks=23973742635553258&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/?multi_permalinks=717803871170152&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/409184221677461/?multi_permalinks=762360796359800&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/409184221677461?multi_permalinks=748139997781880&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/409184221677461/?multi_permalinks=746258794636667&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1166676823767295/?multi_permalinks=2235675293534104&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/777020507714743/?multi_permalinks=994232852660173&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1402891670343465/?multi_permalinks=1481234455842519&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1166676823767295/?multi_permalinks=1669478960153743&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1166676823767295/posts/1360994244335551/",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/3091534247791601/?multi_permalinks=4062400677371615&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/?multi_permalinks=675133765437163&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/?multi_permalinks=705427062407833&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/866999128455993/?multi_permalinks=1204315771390992&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/?multi_permalinks=719541444329728&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/473289738954901/?multi_permalinks=670843479199525&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/angelin.mahendra/posts/pfbid0dWdTR193RWEoTGm5TZNcuXXyZrGRLLLtHSoUskzQtCryhf2gJcrYHfxpCo12Wpwhl",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/860085925909957/?multi_permalinks=1215993516985861&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1402891670343465?multi_permalinks=1481234455842519&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/252006458004726?multi_permalinks=510895648782471&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1402891670343465/?multi_permalinks=1480582535907711&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/270051374482644/?multi_permalinks=1287611372726634&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/858006223018526?multi_permalinks=1105348061617673&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1451746215200629/?multi_permalinks=2404032259972015&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/270051374482644/?multi_permalinks=1284086919745746&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1402891670343465?multi_permalinks=1480582535907711&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/270051374482644?multi_permalinks=1287611372726634&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1396241088181523/?multi_permalinks=1418091209329844&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/777020507714743?multi_permalinks=994232852660173&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/777020507714743/?multi_permalinks=1041455494604575&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/932250033462511?multi_permalinks=23973742635553258&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/1451746215200629/?multi_permalinks=2496901760685064&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        },
+        {
+            "url": "https://web.facebook.com/groups/600406536437913/?multi_permalinks=601095879702312&hoisted_section_header_type=recently_seen",
+            "method": "GET"
+        }
+    ]
+}
