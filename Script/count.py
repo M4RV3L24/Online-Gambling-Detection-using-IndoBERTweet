@@ -14,7 +14,7 @@ def count_unique_entries(file_path):
         return len(unique_entries)  
     
 if __name__ == "__main__":
-    file_path = '../Dataset/Combined Data/combine.json'  # replace with your file path
+    file_path = '../Dataset/Combined Data/combine_final.json'  # replace with your file path
     total_count = count_entries(file_path)
     unique_count = count_unique_entries(file_path)
     
