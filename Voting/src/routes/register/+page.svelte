@@ -2,15 +2,13 @@
     import { enhance } from "$app/forms";
     import type { ActionData } from "./$types";
 
-    // 'form' akan berisi data yang dikembalikan dari action,
-    // seperti pesan error jika login gagal.
     export let form: ActionData;
 </script>
 
-<div class="login-container">
+<div class="register-container">
     <div class="card">
-        <h1 class="header">Selamat Datang</h1>
-        <p class="description">Silakan masuk untuk melanjutkan</p>
+        <h1 class="header">Buat Akun Baru</h1>
+        <p class="description">Daftar untuk mulai memberi label</p>
 
         <form method="POST" use:enhance>
             <div class="form-group">
@@ -27,13 +25,14 @@
                 <p class="error-message">{form.message}</p>
             {/if}
 
-            <button type="submit" class="submit-button">Login</button>
+            <button type="submit" class="submit-button">Daftar</button>
         </form>
     </div>
 </div>
 
 <style>
-    .login-container {
+    /* Anda bisa menyalin gaya dari halaman login atau membuat yang baru */
+    .register-container {
         display: flex;
         justify-content: center;
         align-items: center;
@@ -81,7 +80,7 @@
         padding: 0.75rem;
         border: 1px solid #e2e8f0;
         border-radius: 0.375rem;
-        box-sizing: border-box; /* Pastikan padding tidak menambah lebar */
+        box-sizing: border-box;
     }
 
     .submit-button {

@@ -1,66 +1,109 @@
 // src/routes/(protected)/+page.server.ts
-import { error } from "@sveltejs/kit";
-import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({
-    locals: { supabase, safeGetSession },
-}) => {
-    const { session } = await safeGetSession();
-    if (!session) {
-        // Ini seharusnya sudah ditangani oleh layout, tapi sebagai pengaman tambahan
-        error(401, { message: "Unauthorized" });
-    }
+import { error, fail } from '@sveltejs/kit';
+import type { PageServerLoad, Actions } from './$types';
 
-    const { data: unvotedText, error: rpcError } = await supabase
-        .rpc("get_unvoted_text", { p_user_id: session.user.id })
-        .single(); //.single() untuk mengambil satu baris saja
+export const load: PageServerLoad = async ({ url, locals: { supabase, safeGetSession } }) => {
+	const { session } = await safeGetSession();
+	if (!session) {
+		error(401, { message: 'Unauthorized' });
+	}
 
-    if (rpcError) {
-        console.error("Error fetching unvoted text:", rpcError);
-        error(500, { message: "Failed to fetch new text to label." });
-    }
+	// Ambil parameter sort dan filter dari URL
+	const sortBy = url.searchParams.get('sort') || 'id_asc'; // Default sort by id ascending
+	const filterBy = url.searchParams.get('filter') || 'all'; // Default show all
 
-    return {
-        unvotedText,
-    };
+	// Bangun kueri dasar
+	let query = supabase.from('texts_to_label').select('*, votes:votes(user_id, vote)').order('id', { ascending: true });
+	
+    // Terapkan filter berdasarkan parameter URL
+	if (filterBy === 'voted_yes') {
+		query = query.eq('votes.vote', true);
+	} else if (filterBy === 'voted_no') {
+		query = query.eq('votes.vote', false);
+	} else if (filterBy === 'unvoted') {
+		query = query.is('votes.vote', null);
+	}
+
+	// Terapkan pengurutan
+	// Logika utama: selalu tampilkan yang belum divoting di atas, lalu urutkan sisanya.
+	const [sortColumn, sortDirection] = sortBy.split('_');
+	query = query.order('vote', { foreignTable: 'votes', ascending: true, nullsFirst: true })
+				.order(sortColumn, { ascending: sortDirection === 'asc' });
+
+
+	// Eksekusi kueri
+	const { data: texts, error: dbError } = await query;
+
+	if (dbError) {
+		console.error('Error fetching texts:', dbError);
+		error(500, { message: 'Failed to fetch texts to label.' });
+	}
+
+	return {
+		texts: texts ?? [],
+		sortBy,
+		filterBy
+	};
 };
 
-// Di dalam src/routes/(protected)/+page.server.ts
-import { fail } from '@sveltejs/kit';
-import type { Actions } from './$types';
-
 export const actions: Actions = {
-    vote: async ({ request, locals: { supabase, safeGetSession } }) => {
-        const { session } = await safeGetSession();
-        if (!session) {
-            return fail(401, { message: "You must be logged in to vote." });
+	// Aksi untuk memilih 'Yes' atau 'No'
+	vote: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
+		if (!session) {
+			return fail(401, { message: 'You must be logged in to vote.' });
+		}
+
+		const formData = await request.formData();
+		const textId = formData.get('text_id');
+		const decision = formData.get('vote'); // 'yes' or 'no'
+
+		if (!textId ||!decision) {
+			return fail(400, { message: 'Invalid vote submission.' });
+		}
+
+		const voteValue = decision === 'yes';
+        console.log(`User ${session.user.id} voted ${voteValue} for text ID ${textId}`);
+		// Gunakan upsert untuk membuat atau memperbarui vote
+		const { error } = await supabase.from('votes').upsert({
+			text_id: Number(textId),
+			user_id: session.user.id,
+			vote: voteValue,
+		}, { onConflict: 'text_id, user_id' }); // Kunci unik untuk upsert
+
+        console.log(error);
+		if (error) {
+			return fail(500, { message: 'Failed to record vote.', success: false });
+		}
+
+		return { success: true, message: `Vote '${decision.toUpperCase()}' recorded!` };
+	},
+
+	// Aksi baru untuk membatalkan vote
+	undoVote: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { session } = await safeGetSession();
+		if (!session) {
+			return fail(401, { message: 'You must be logged in.' });
+		}
+
+		const formData = await request.formData();
+		const textId = formData.get('text_id');
+
+		if (!textId) {
+			return fail(400, { message: 'Invalid request.' });
+		}
+
+		const { error } = await supabase
+			.from('votes')
+			.delete()
+			.match({ text_id: Number(textId), user_id: session.user.id });
+        
+
+		if (error) {
+			return fail(500, { message: 'Failed to undo vote.', success: false });
         }
 
-        const formData = await request.formData();
-        const textId = formData.get("text_id");
-        const decision = formData.get("decision");
-
-        if (!textId || !decision) {
-            return fail(400, { message: "Invalid vote submission." });
-        }
-
-        const voteValue = decision === "yes";
-
-        const { error } = await supabase.from("votes").insert({
-            text_id: Number(textId),
-            user_id: session.user.id,
-            vote: voteValue,
-        });
-
-        if (error) {
-            // Tangani kemungkinan error duplikat di sini jika perlu
-            if (error.code === "23505") {
-                // Kode error untuk pelanggaran unique constraint
-                return { success: true, message: "Vote already recorded." };
-            }
-            return fail(500, { message: "Failed to record vote." });
-        }
-
-        return { success: true, message: "Vote recorded successfully!" };
-    },
+		return { success: true, message: 'Vote undone!' };
+	}
 };
