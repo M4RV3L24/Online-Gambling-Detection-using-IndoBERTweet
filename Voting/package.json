@@ -23,6 +23,7 @@
 	"dependencies": {
 		"@supabase/ssr": "^0.6.1",
 		"@supabase/supabase-js": "^2.50.4",
-		"dotenv": "^17.2.0"
+		"dotenv": "^17.2.0",
+		"svelte-sonner": "^1.0.5"
 	}
 }
