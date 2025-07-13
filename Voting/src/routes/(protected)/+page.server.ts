@@ -25,6 +25,10 @@ export const load: PageServerLoad = async ({
     };
 };
 
+// Di dalam src/routes/(protected)/+page.server.ts
+import { fail } from '@sveltejs/kit';
+import type { Actions } from './$types';
+
 export const actions: Actions = {
     vote: async ({ request, locals: { supabase, safeGetSession } }) => {
         const { session } = await safeGetSession();

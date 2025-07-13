@@ -19,7 +19,7 @@ async function seedData() {
     // Format input:
     // Format output: [{ text_content: "some text" }]
     const formattedData = jsonData.map(item => ({
-      text_content: item.Text
+      text_content: item.text
     }));
 
     if (formattedData.length === 0) {
