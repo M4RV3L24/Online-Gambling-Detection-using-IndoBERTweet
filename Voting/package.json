@@ -15,6 +15,9 @@
 		"@sveltejs/adapter-auto": "^6.0.0",
 		"@sveltejs/kit": "^2.16.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
+		"@tailwindcss/postcss": "^4.1.11",
+		"autoprefixer": "^10.4.21",
+		"postcss": "^8.5.6",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"typescript": "^5.0.0",
@@ -23,7 +26,9 @@
 	"dependencies": {
 		"@supabase/ssr": "^0.6.1",
 		"@supabase/supabase-js": "^2.50.4",
+		"@tailwindcss/vite": "^4.1.11",
 		"dotenv": "^17.2.0",
-		"svelte-sonner": "^1.0.5"
+		"svelte-sonner": "^1.0.5",
+		"tailwindcss": "^4.1.11"
 	}
 }
