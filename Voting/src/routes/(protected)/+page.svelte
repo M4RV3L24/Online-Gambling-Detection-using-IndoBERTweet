@@ -18,17 +18,6 @@
         currentSort = $page.url.searchParams.get("sort") || "id_asc";
     }
 
-    console.log(data.texts);
-
-    // Tampilkan notifikasi toast setelah aksi form berhasil
-    onMount(() => {
-        if (form?.success) {
-            toast.success(form.message);
-        } else if (form?.message) {
-            toast.error(form.message);
-        }
-    });
-
     // Fungsi untuk mengubah parameter URL tanpa reload halaman penuh
     function applyQuery(key: string, value: string) {
         const searchParams = new URLSearchParams($page.url.searchParams);
@@ -38,169 +27,257 @@
             noScroll: true,
         });
     }
+
+    onMount(() => {
+        if (form?.success) {
+            toast.success(form.message);
+        } else if (form?.message) {
+            toast.error(form.message);
+        }
+        if (
+            document.getElementById("selection-table") &&
+            typeof simpleDatatables.DataTable !== "undefined"
+        ) {
+            let multiSelect = true;
+            let rowNavigation = false;
+            let table = null;
+
+            const resetTable = function () {
+                if (table) {
+                    table.destroy();
+                }
+
+                const options = {
+                    rowRender: (row, tr, _index) => {
+                        if (!tr.attributes) {
+                            tr.attributes = {};
+                        }
+                        if (!tr.attributes.class) {
+                            tr.attributes.class = "";
+                        }
+                        if (row.selected) {
+                            tr.attributes.class += " selected";
+                        } else {
+                            tr.attributes.class = tr.attributes.class.replace(
+                                " selected",
+                                ""
+                            );
+                        }
+                        return tr;
+                    },
+                };
+                if (rowNavigation) {
+                    options.rowNavigation = true;
+                    options.tabIndex = 1;
+                }
+
+                table = new simpleDatatables.DataTable(
+                    "#selection-table",
+                    options
+                );
+
+                // Mark all rows as unselected
+                table.data.data.forEach((data) => {
+                    data.selected = false;
+                });
+
+                table.on("datatable.selectrow", (rowIndex, event) => {
+                    event.preventDefault();
+                    const row = table.data.data[rowIndex];
+                    if (row.selected) {
+                        row.selected = false;
+                    } else {
+                        if (!multiSelect) {
+                            table.data.data.forEach((data) => {
+                                data.selected = false;
+                            });
+                        }
+                        row.selected = true;
+                    }
+                    table.update();
+                });
+            };
+
+            // Row navigation makes no sense on mobile, so we deactivate it and hide the checkbox.
+            const isMobile = window.matchMedia("(any-pointer:coarse)").matches;
+            if (isMobile) {
+                rowNavigation = false;
+            }
+
+            resetTable();
+        }
+    });
 </script>
 
 <Toaster />
 <p class="text-2xl font-bold bg-gray-900 text-white p-4">TEST</p>
-<table id="default-table">
-    <thead>
-        <tr>
-            <th>
-                <span class="flex items-center">
-                    Name
-                    <svg
-                        class="w-4 h-4 ms-1"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="none"
-                        viewBox="0 0 24 24"
+<div class="container mx-auto p-1">
+    <table id="selection-table">
+        <thead>
+            <tr>
+                <th
+                    class="bg-gray-50 dark:bg-gray-700 text-2xl text-gray-50 dark:text-gray-400 hover:bg-gray-300"
+                >
+                    <span class="flex items-center">
+                        ID
+                        <svg
+                            class="w-8 h-8 ms-1"
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="m8 15 4 4 4-4m0-6-4-4-4 4"
+                            />
+                        </svg>
+                    </span>
+                </th>
+                <th
+                    class="bg-gray-50 dark:bg-gray-700 text-2xl text-gray-50 dark:text-gray-400 hover:bg-gray-300"
+                >
+                    <span class="flex items-center">
+                        Comment Text
+                        <svg
+                            class="w-8 h-8 ms-1"
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="m8 15 4 4 4-4m0-6-4-4-4 4"
+                            />
+                        </svg>
+                    </span>
+                </th>
+                <th
+                    class="bg-gray-50 dark:bg-gray-700 text-2xl text-gray-50 dark:text-gray-400 hover:bg-gray-300"
+                >
+                    <span class="flex items-center">
+                        Action
+                        <svg
+                            class="w-8 h-8 ms-1"
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="m8 15 4 4 4-4m0-6-4-4-4 4"
+                            />
+                        </svg>
+                    </span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {#if data.texts.length > 0}
+                {#each data.texts as item (item.id)}
+                    <tr
+                        class="text-xl text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-50 cursor-pointer"
                     >
-                        <path
-                            stroke="currentColor"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="m8 15 4 4 4-4m0-6-4-4-4 4"
-                        />
-                    </svg>
-                </span>
-            </th>
-            <th data-type="date" data-format="YYYY/DD/MM">
-                <span class="flex items-center">
-                    Release Date
-                    <svg
-                        class="w-4 h-4 ms-1"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke="currentColor"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="m8 15 4 4 4-4m0-6-4-4-4 4"
-                        />
-                    </svg>
-                </span>
-            </th>
-            <th>
-                <span class="flex items-center">
-                    NPM Downloads
-                    <svg
-                        class="w-4 h-4 ms-1"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke="currentColor"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="m8 15 4 4 4-4m0-6-4-4-4 4"
-                        />
-                    </svg>
-                </span>
-            </th>
-            <th>
-                <span class="flex items-center">
-                    Growth
-                    <svg
-                        class="w-4 h-4 ms-1"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke="currentColor"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="m8 15 4 4 4-4m0-6-4-4-4 4"
-                        />
-                    </svg>
-                </span>
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td
-                class="font-medium text-gray-900 bg-black whitespace-nowrap dark:text-white"
-                >Aurelia</td
-            >
-            <td>2015/08/07</td>
-            <td>200000</td>
-            <td>20%</td>
-        </tr>
-        <tr>
-            <td
-                class="font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                >Inferno</td
-            >
-            <td>2016/27/09</td>
-            <td>100000</td>
-            <td>35%</td>
-        </tr>
-        <tr>
-            <td
-                class="font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                >Preact</td
-            >
-            <td>2015/16/08</td>
-            <td>600000</td>
-            <td>28%</td>
-        </tr>
-        <tr>
-            <td
-                class="font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                >Lit</td
-            >
-            <td>2018/28/05</td>
-            <td>400000</td>
-            <td>60%</td>
-        </tr>
-        <tr>
-            <td
-                class="font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                >Alpine.js</td
-            >
-            <td>2019/02/11</td>
-            <td>300000</td>
-            <td>70%</td>
-        </tr>
-        <tr>
-            <td
-                class="font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                >Stimulus</td
-            >
-            <td>2018/06/03</td>
-            <td>150000</td>
-            <td>25%</td>
-        </tr>
-        <tr>
-            <td
-                class="font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                >Solid</td
-            >
-            <td>2021/05/07</td>
-            <td>250000</td>
-            <td>80%</td>
-        </tr>
-    </tbody>
-</table>
+                        <td class="font-medium whitespace-nowrap">{item.id}</td>
+                        <td><p class="">{item.text_content}</p></td>
+                        <td>
+                            {#if item.votes.length > 0}
+                                <span
+                                    class="vote-status"
+                                    class:yes={item.votes.vote}
+                                    class:no={!item.votes.vote}
+                                >
+                                    Voted: {item.votes.vote ? "Yes" : "No"}
+                                </span>
+                                <form method="POST" action="?/undoVote">
+                                    <input
+                                        type="hidden"
+                                        name="text_id"
+                                        value={item.id}
+                                    />
+                                    <button
+                                        type="submit"
+                                        name="undoVote"
+                                        class="btn-undo">Undo</button
+                                    >
+                                </form>
+                            {:else}
+                                <div
+                                    class="inline-flex rounded-md shadow-xs"
+                                    role="group"
+                                >
+                                    <form
+                                        method="POST"
+                                        action="?/vote"
+                                        class="inline"
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="text_id"
+                                            value={item.id}
+                                        />
+                                        <button
+                                            type="submit"
+                                            name="vote"
+                                            value="yes"
+                                            class="btn-yes relative inline-flex items-center justify-center w-[100px] p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-lime-800"
+                                        >
+                                            <span
+                                                class="text-xl relative px-8 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
+                                            >
+                                                Yes
+                                            </span>
+                                        </button>
+                                    </form>
+                                    <form
+                                        method="POST"
+                                        action="?/vote"
+                                        class="inline"
+                                    >
+                                        <input
+                                            type="hidden"
+                                            name="text_id"
+                                            value={item.id}
+                                        />
+                                        <button
+                                            type="submit"
+                                            name="vote"
+                                            value="no"
+                                            class="btn-no relative inline-flex items-center justify-center w-[100px] p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
+                                        >
+                                            <span
+                                                class="text-xl relative px-8 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
+                                            >
+                                                No
+                                            </span>
+                                        </button>
+                                    </form>
+                                </div>
+                            {/if}
+                        </td>
+                    </tr>
+                {/each}
+            {:else}{/if}
+        </tbody>
+    </table>
+</div>
 
 <div class="controls-container">
     <div class="control-group">
@@ -308,127 +385,9 @@
     </div>
 {/if}
 
-
 <style lang="postcss">
     @reference "tailwindcss";
     :global(html) {
         background-color: theme(--color-gray-100);
     }
-	.controls-container {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1rem 2rem;
-		background-color: #f0f0f0;
-		border-radius: 8px;
-		margin-bottom: 2rem;
-		flex-wrap: wrap;
-		gap: 1rem;
-	}
-	.control-group {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	.control-group span {
-		font-weight: 500;
-		margin-right: 0.5rem;
-	}
-	.control-group button {
-		padding: 0.5rem 1rem;
-		border: 1px solid #ccc;
-		background-color: white;
-		cursor: pointer;
-		border-radius: 5px;
-		transition: all 0.2s ease;
-	}
-	.control-group button:hover {
-		background-color: #e9e9e9;
-	}
-	.control-group button.active {
-		background-color: #4299e1;
-		color: white;
-		border-color: #4299e1;
-	}
-
-	.card-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.card {
-		background-color: white;
-		border: 1px solid #ddd;
-		border-radius: 8px;
-		padding: 1.5rem;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-		transition: all 0.2s ease;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.card.voted {
-		background-color: #f9f9f9;
-		opacity: 0.7;
-	}
-
-	.text-id {
-		display: block;
-		font-size: 0.8rem;
-		color: #999;
-		margin-bottom: 0.5rem;
-	}
-
-	.text-content {
-		font-size: 1.1rem;
-		line-height: 1.6;
-		flex-grow: 1;
-	}
-
-	.actions {
-		display: flex;
-		gap: 1rem;
-		align-items: center;
-		justify-content: flex-end;
-	}
-
-	.vote-status {
-		font-weight: bold;
-		padding: 0.5rem 1rem;
-		border-radius: 5px;
-	}
-	.vote-status.yes {
-		color: #28a745;
-		background-color: #eaf6ec;
-	}
-	.vote-status.no {
-		color: #dc3545;
-		background-color: #fbe9eb;
-	}
-
-	.actions button {
-		padding: 0.6rem 1.2rem;
-		border: none;
-		border-radius: 5px;
-		font-size: 0.9rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: background-color 0.2s ease;
-	}
-
-	.btn-yes { background-color: #28a745; color: white; }
-	.btn-yes:hover { background-color: #218838; }
-	.btn-no { background-color: #dc3545; color: white; }
-	.btn-no:hover { background-color: #c82333; }
-	.btn-undo { background-color: #6c757d; color: white; }
-	.btn-undo:hover { background-color: #5a6268; }
-
-	.empty-state {
-		text-align: center;
-		padding: 3rem;
-		color: #666;
-	}
 </style>
-
