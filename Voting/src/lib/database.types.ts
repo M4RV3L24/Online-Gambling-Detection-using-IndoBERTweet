@@ -61,23 +61,26 @@ export type Database = {
                 Row: {
                     created_at: string;
                     id: number;
+                    skip: number | null;
                     text_id: number;
                     user_id: string;
-                    vote: boolean;
+                    vote: boolean | null;
                 };
                 Insert: {
                     created_at?: string;
                     id?: number;
+                    skip?: number | null;
                     text_id: number;
                     user_id: string;
-                    vote: boolean;
+                    vote?: boolean | null;
                 };
                 Update: {
                     created_at?: string;
                     id?: number;
+                    skip?: number | null;
                     text_id?: number;
                     user_id?: string;
-                    vote?: boolean;
+                    vote?: boolean | null;
                 };
                 Relationships: [
                     {
@@ -94,7 +97,14 @@ export type Database = {
             [_ in never]: never;
         };
         Functions: {
-            [_ in never]: never;
+            get_unvoted_text: {
+                Args: { p_user_id: string };
+                Returns: {
+                    id: number;
+                    original_id: string | null;
+                    text_content: string;
+                }[];
+            };
         };
         Enums: {
             [_ in never]: never;

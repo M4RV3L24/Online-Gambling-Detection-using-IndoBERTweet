@@ -1,0 +1,26 @@
+
+    // Server-side filter for current user
+    let filteredTexts = texts ?? [];
+    // if (filterBy === "voted_yes") {
+    //     filteredTexts = filteredTexts.filter((t) =>
+    //         t.votes.some((v) => v.user_id === session.user.id && v.vote === true && (!v.skip || v.skip === 0))
+    //     );
+    // } else if (filterBy === "voted_no") {
+    //     filteredTexts = filteredTexts.filter((t) =>
+    //         t.votes.some((v) => v.user_id === session.user.id && v.vote === false && (!v.skip || v.skip === 0))
+    //     );
+    // } else if (filterBy === "all") {
+    //     // Show all texts for current user, except those skipped
+    //     filteredTexts = filteredTexts.filter((t) =>
+    //         !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)
+    //     );
+    // } else {
+    //     console.log("Filtering for unvoted texts");
+        // filteredTexts = filteredTexts.filter((t) => {
+        //     // Filter for unvoted texts
+        //     (!t.votes.some((v) => v.user_id === session.user.id) &&
+        //     !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)) ||
+        //     t.votes.some((v) => v.user_id === session.user.id && v.skip === 0 && v.vote === null);
+            
+        // });
+    // }

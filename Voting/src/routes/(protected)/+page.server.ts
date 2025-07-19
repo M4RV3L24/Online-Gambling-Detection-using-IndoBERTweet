@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({
     // Bangun kueri dasar
     let query = supabase
         .from("texts_to_label")
-        .select("*, votes:votes(user_id, vote)")
+        .select("*, votes:votes(user_id, vote, skip)")
         .order("id", { ascending: true });
 
     // Terapkan filter berdasarkan parameter URL
@@ -44,14 +44,23 @@ export const load: PageServerLoad = async ({
 
     // Eksekusi kueri
     const { data: texts, error: dbError } = await query;
+    // Exclude texts that have been skipped by the current user
     const unvotedTexts = (texts ?? [])
-        .filter((t) => !t.votes.some((v) => v.user_id === session.user.id))
+        .filter((t) =>
+            // Not voted by user AND not skipped by user
+        (
+            !t.votes.some((v) => v.user_id === session.user.id) &&
+            !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)) ||
+            // Include texts that have been skipped by the user
+            t.votes.some((v) => v.user_id === session.user.id && v.skip === 0 && v.vote === null)
+        )
         .slice(0, 200);
 
     const { count: already_vote_count, error: countError } = await supabase
         .from("votes")
         .select("", { count: "exact", head: true })
-        .eq("user_id", session.user.id);
+        .eq("user_id", session.user.id)
+        .or("skip.is.null,skip.eq.0");
 
     if (countError) {
         console.error("Error counting votes:", countError);
@@ -112,6 +121,38 @@ export const actions: Actions = {
             success: true,
             message: `Vote '${decision.toUpperCase()}' recorded!`,
         };
+    },
+    skip: async ({ request, locals: { supabase, safeGetSession } }) => {
+        const { session } = await safeGetSession();
+        if (!session) {
+            return fail(401, { message: "You must be logged in." });
+        }
+
+        const formData = await request.formData();
+        const textId = formData.get("text_id");
+
+        if (!textId) {
+            return fail(400, { message: "Invalid request." });
+        }
+
+        const { error } = await supabase
+            .from("votes")
+            .upsert({
+                text_id: Number(textId),
+                user_id: session.user.id,
+                skip: 1, // Tandai sebagai skip
+            });
+
+        console.log(error);
+        if (error) {
+            return fail(500, {
+                message: "Failed to record vote.",
+                success: false,
+            });
+        }
+
+        // Aksi untuk melewati teks
+        return { success: true, message: "Skipped the text." };
     },
 
     // Aksi baru untuk membatalkan vote

@@ -1,5 +1,7 @@
 <script>
 import "../app.css";
+import "simple-datatables/dist/style.css";
+
 let { children } = $props();
 </script>
 
@@ -7,3 +9,4 @@ let { children } = $props();
 <div class="relative z-0 min-h-screen w-full dark:text-gray-100">
   {@render children()}
 </div>
+
