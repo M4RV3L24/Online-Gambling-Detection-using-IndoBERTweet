@@ -49,16 +49,19 @@ export const load: PageServerLoad = async ({
     } else if (filterBy === "all") {
         // Show only texts that are unvoted and not skipped by the current user
         filteredTexts = filteredTexts.filter((t) =>
-            !t.votes.some((v) => v.user_id === session.user.id) &&
-            !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)
-        );
-    } else {
-        filteredTexts = filteredTexts.filter((t) => {
-            // Filter for unvoted texts (fallback for other filters)
             (!t.votes.some((v) => v.user_id === session.user.id) &&
             !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)) ||
-            t.votes.some((v) => v.user_id === session.user.id && v.skip === 0 && v.vote === null);
-        });
+            t.votes.some((v) => v.user_id === session.user.id && (v.skip === 0 || v.skip === null) && v.vote === null)
+        );
+    } else if (filterBy === "skipped") {
+        // Show only texts that are skipped by the current user
+        filteredTexts = filteredTexts.filter((t) =>
+            t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)
+        );
+    } else {
+        // Default to showing all texts if filter is not recognized
+        filteredTexts = texts ?? [];
+        
     }
     filteredTexts = filteredTexts.slice(0, 200);
 

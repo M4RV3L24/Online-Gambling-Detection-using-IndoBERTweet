@@ -42,11 +42,11 @@
         initDatatable();
     });
 
-    function applyQuery(key: string, value: string) {
-        const searchParams = new URLSearchParams($page.url.searchParams);
-        searchParams.set(key, value);
-        goto(`?${searchParams.toString()}`, { keepFocus: true, noScroll: true });
-    }
+function applyQuery(key: string, value: string) {
+    const searchParams = new URLSearchParams($page.url.searchParams);
+    searchParams.set(key, value);
+    window.location.search = searchParams.toString(); // Forces full reload and server-side load
+}
 </script>
 
 <Toaster />
@@ -93,30 +93,31 @@
             >
                 <li>
                     <a
-                        href="#"
+                        href="/"
                         on:click|preventDefault={() => applyQuery('filter', 'all')}
                         class="text-gray-900 dark:text-white hover:underline"
                         aria-current="page">All</a>
                 </li>
                 <li>
                     <a
-                        href="#"
+                        href="/"
                         on:click|preventDefault={() => applyQuery('filter', 'voted_yes')}
                         class="text-gray-900 dark:text-white hover:underline"
                         >Yes Choice</a>
                 </li>
                 <li>
                     <a
-                        href="#"
+                        href="/"
                         on:click|preventDefault={() => applyQuery('filter', 'voted_no')}
                         class="text-gray-900 dark:text-white hover:underline"
                         >No Choice</a>
                 </li>
                 <li>
                     <a
-                        href="?/filter=unvoted"
+                        href="/"
+                        on:click|preventDefault={() => applyQuery('filter', 'skipped')}
                         class="text-gray-900 dark:text-white hover:underline"
-                        >Unvoted</a>
+                        >Skipped</a>
                 </li>
                 <li>
                     <a
