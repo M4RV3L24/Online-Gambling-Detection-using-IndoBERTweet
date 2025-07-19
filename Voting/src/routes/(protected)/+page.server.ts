@@ -22,15 +22,6 @@ export const load: PageServerLoad = async ({
         .select("*, votes:votes(user_id, vote, skip)")
         .order("id", { ascending: true });
 
-    // Terapkan filter berdasarkan parameter URL
-    if (filterBy === "voted_yes") {
-        query = query.eq("votes.vote", true);
-    } else if (filterBy === "voted_no") {
-        query = query.eq("votes.vote", false);
-    } else if (filterBy === "unvoted") {
-        query = query.is("votes.vote", null);
-    }
-
     // Terapkan pengurutan
     // Logika utama: selalu tampilkan yang belum divoting di atas, lalu urutkan sisanya.
     const [sortColumn, sortDirection] = sortBy.split("_");
@@ -44,17 +35,32 @@ export const load: PageServerLoad = async ({
 
     // Eksekusi kueri
     const { data: texts, error: dbError } = await query;
-    // Exclude texts that have been skipped by the current user
-    const unvotedTexts = (texts ?? [])
-        .filter((t) =>
-            // Not voted by user AND not skipped by user
-        (
+
+    // Server-side filter for current user
+    let filteredTexts = texts ?? [];
+    if (filterBy === "voted_yes") {
+        filteredTexts = filteredTexts.filter((t) =>
+            t.votes.some((v) => v.user_id === session.user.id && v.vote === true && (!v.skip || v.skip === 0))
+        );
+    } else if (filterBy === "voted_no") {
+        filteredTexts = filteredTexts.filter((t) =>
+            t.votes.some((v) => v.user_id === session.user.id && v.vote === false && (!v.skip || v.skip === 0))
+        );
+    } else if (filterBy === "all") {
+        // Show only texts that are unvoted and not skipped by the current user
+        filteredTexts = filteredTexts.filter((t) =>
             !t.votes.some((v) => v.user_id === session.user.id) &&
+            !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)
+        );
+    } else {
+        filteredTexts = filteredTexts.filter((t) => {
+            // Filter for unvoted texts (fallback for other filters)
+            (!t.votes.some((v) => v.user_id === session.user.id) &&
             !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)) ||
-            // Include texts that have been skipped by the user
-            t.votes.some((v) => v.user_id === session.user.id && v.skip === 0 && v.vote === null)
-        )
-        .slice(0, 200);
+            t.votes.some((v) => v.user_id === session.user.id && v.skip === 0 && v.vote === null);
+        });
+    }
+    filteredTexts = filteredTexts.slice(0, 200);
 
     const { count: already_vote_count, error: countError } = await supabase
         .from("votes")
@@ -73,7 +79,7 @@ export const load: PageServerLoad = async ({
 
     return {
         already_vote_count: already_vote_count ?? 0,
-        texts: unvotedTexts ?? [],
+        texts: filteredTexts ?? [],
         sortBy,
         filterBy,
     };
