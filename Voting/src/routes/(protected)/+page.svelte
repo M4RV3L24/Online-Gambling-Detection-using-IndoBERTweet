@@ -1,5 +1,62 @@
 <script lang="ts">
     import { Toaster, toast } from "svelte-sonner";
+
+    // Function to load more unvoted data
+    async function loadMoreData() {
+        if (isLoadingMore || !hasMoreData) return;
+        
+        isLoadingMore = true;
+        // console.log('Loading more data...');
+        
+        try {
+            // Get IDs of texts we already have
+            const existingIds = allTexts.map(t => t.id);
+            
+            const response = await fetch('/api/load-more-texts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    excludeIds: existingIds,
+                    limit: 500 // Load 500 more records
+                })
+            });
+            
+            if (response.ok) {
+                const newData = await response.json();
+                if (newData.texts && newData.texts.length > 0) {
+                    // console.log(`Loaded ${newData.texts.length} new texts`);
+                    // Add new texts to our existing array
+                    allTexts = [...allTexts, ...newData.texts.map(t => ({ ...t, votes: [...t.votes] }))];
+                    tableVersion++; // Force re-render
+                } else {
+                    hasMoreData = false;
+                    // console.log('No more data available');
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load more data:', error);
+        } finally {
+            isLoadingMore = false;
+        }
+    }
+
+    // Check if we need to load more data
+    function checkAndLoadMoreData() {
+        const unvotedCount = allTexts.filter((t) => {
+            return (
+                (!t.votes.some((v) => v.user_id === data.session.user.id) &&
+                    !t.votes.some((v) => v.user_id === data.session.user.id && v.skip === 1)) ||
+                t.votes.some((v) => v.user_id === data.session.user.id && (v.skip === 0 || v.skip === null) && v.vote === null)
+            );
+        }).length;
+        
+        // console.log(`Unvoted count: ${unvotedCount}`);
+        
+        // Load more data if unvoted count is low
+        if (unvotedCount < 200 && hasMoreData && !isLoadingMore) {
+            loadMoreData();
+        }
+    };
     import { onMount } from "svelte";
     import { enhance } from "$app/forms";
     import { flip } from "svelte/animate";
@@ -13,15 +70,25 @@
     // Make texts reactive for instant UI updates
     let allTexts = data?.texts ? data.texts.map(t => ({ ...t, votes: [...t.votes] })) : [];
     let tableVersion = 0; // Force table re-render
+    let isLoadingMore = false; // Prevent multiple simultaneous loads
+    let hasMoreData = true; // Track if more data is available
+    
+    // Calculate real-time vote count
+    $: currentVoteCount = allTexts.filter((t) => {
+        return t.votes.some((v) => 
+            v.user_id === data.session.user.id && 
+            (v.vote === true || v.vote === false || v.skip === 1)
+        );
+    }).length;
     
     // Debug: Log initial data
-    console.log('Initial data structure:', { 
-        dataExists: !!data, 
-        textsCount: data?.texts?.length || 0, 
-        allTextsCount: allTexts.length,
-        firstText: allTexts[0],
-        userID: data?.session?.user?.id
-    });
+    // console.log('Initial data structure:', { 
+    //     dataExists: !!data, 
+    //     textsCount: data?.texts?.length || 0, 
+    //     allTextsCount: allTexts.length,
+    //     firstText: allTexts[0],
+    //     userID: data?.session?.user?.id
+    // });
 
     $: filteredTexts = allTexts
         ? allTexts
@@ -64,15 +131,15 @@
                       );
                   }
               })
-              .slice(0, 1000)
+              .slice(0, 200)
         : [];
 
     function onVoteUpdate(textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') {
-        console.log('onVoteUpdate called in parent:', { textId, voteType });
+        // console.log('onVoteUpdate called in parent:', { textId, voteType });
         
         // Find the text item
         const tIdx = allTexts.findIndex(t => t.id === textId);
-        console.log('Text index found:', tIdx, 'in array of length:', allTexts.length);
+        // console.log('Text index found:', tIdx, 'in array of length:', allTexts.length);
         
         if (tIdx === -1) {
             console.error('Text not found with id:', textId);
@@ -80,44 +147,48 @@
         }
         
         const userId = data.session.user.id;
-        console.log('User ID:', userId);
+        // console.log('User ID:', userId);
         
         // Find or create the vote object for this user
         let vIdx = allTexts[tIdx].votes.findIndex(v => v.user_id === userId);
-        console.log('Vote index found:', vIdx);
+        // console.log('Vote index found:', vIdx);
         
         if (voteType === 'cancel') {
             if (vIdx !== -1) {
                 allTexts[tIdx].votes.splice(vIdx, 1);
-                console.log('Vote removed');
+                // console.log('Vote removed');
             }
         } else if (voteType === 'skip') {
             if (vIdx === -1) {
                 allTexts[tIdx].votes.push({ user_id: userId, vote: null, skip: 1 });
-                console.log('Skip vote added');
+                // console.log('Skip vote added');
             } else {
                 allTexts[tIdx].votes[vIdx].vote = null;
                 allTexts[tIdx].votes[vIdx].skip = 1;
-                console.log('Vote updated to skip');
+                // console.log('Vote updated to skip');
             }
         } else {
             if (vIdx === -1) {
                 allTexts[tIdx].votes.push({ user_id: userId, vote: voteType === 'yes', skip: 0 });
-                console.log('New vote added:', voteType);
+                // console.log('New vote added:', voteType);
             } else {
                 allTexts[tIdx].votes[vIdx].vote = voteType === 'yes';
                 allTexts[tIdx].votes[vIdx].skip = 0;
-                console.log('Vote updated to:', voteType);
+                // console.log('Vote updated to:', voteType);
             }
         }
         
-        console.log('Before reassignment - allTexts length:', allTexts.length);
+        // console.log('Before reassignment - allTexts length:', allTexts.length);
         // Force reactivity
         allTexts = [...allTexts];
         tableVersion++; // Force table re-render
-        console.log('After reassignment - allTexts length:', allTexts.length);
-        console.log('Table version updated to:', tableVersion);
-        console.log('Reactivity update complete');
+        // console.log('After reassignment - allTexts length:', allTexts.length);
+        // console.log('Table version updated to:', tableVersion);
+        // console.log('Updated vote count:', currentVoteCount);
+        // console.log('Reactivity update complete');
+        
+        // Check if we need to load more data
+        setTimeout(() => checkAndLoadMoreData(), 100);
     }
 
     onMount(() => {
@@ -135,6 +206,8 @@
             wrapper.parentNode.removeChild(wrapper);
         }
         filter.set(value);
+        // Force table re-render even if same filter is applied
+        tableVersion++;
     }
 
     
@@ -154,7 +227,7 @@
             />
             <span
                 class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"
-                >count: {data.already_vote_count}</span
+                >count: {currentVoteCount}</span
             >
         </a>
         <div class="flex items-center space-x-6 rtl:space-x-reverse">
@@ -234,6 +307,14 @@
 
 <div class="dark:bg-gray-900 dark:text-white bg-gray-300">
     <div class="container mx-auto p-1 mt-3 mb-10">
+        {#if isLoadingMore}
+            <div class="mb-4 p-4 bg-blue-100 dark:bg-blue-900 rounded-lg text-center">
+                <p class="text-blue-800 dark:text-blue-200">
+                    Loading more data... 🔄
+                </p>
+            </div>
+        {/if}
+        
         {#key `${$filter}-${tableVersion}`}
             <SelectionTable {filteredTexts} currentFilter={$filter} onVoteUpdate={onVoteUpdate} />
         {/key}

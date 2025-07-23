@@ -67,7 +67,7 @@
         const textId = parseInt(button.getAttribute('data-text-id') || '0');
         const voteType = button.getAttribute('data-vote-action') as 'yes' | 'no' | 'skip' | 'cancel';
         
-        console.log('Button clicked via delegation:', { textId, voteType });
+        // console.log('Button clicked via delegation:', { textId, voteType });
         
         if (textId && voteType) {
             handleVote(textId, voteType);
@@ -91,7 +91,7 @@
 
     // Instant UI update and background fetch
     async function handleVote(textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') {
-        console.log('handleVote called:', { textId, voteType });
+        // console.log('handleVote called:', { textId, voteType });
         
         // Check if onVoteUpdate function exists
         if (!onVoteUpdate) {
@@ -100,9 +100,9 @@
         }
         
         // Update UI immediately
-        console.log('Calling onVoteUpdate...');
+        // console.log('Calling onVoteUpdate...');
         onVoteUpdate(textId, voteType);
-        console.log('onVoteUpdate called successfully');
+        // console.log('onVoteUpdate called successfully');
         
         // Send request to server in background
         const formData = new FormData();
@@ -118,7 +118,7 @@
             formData.append('vote', voteType);
         }
         
-        console.log('Sending fetch request to:', window.location.pathname + actionPath);
+        // console.log('Sending fetch request to:', window.location.pathname + actionPath);
         
         try {
             const response = await fetch(window.location.pathname + actionPath, {
@@ -126,7 +126,7 @@
                 body: formData,
                 headers: { 'x-sveltekit-action': 'true' }
             });
-            console.log('Server response:', response.status, response.statusText);
+            // console.log('Server response:', response.status, response.statusText);
         } catch (e) {
             console.error('Vote failed:', e);
         }
