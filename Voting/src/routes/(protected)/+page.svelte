@@ -8,67 +8,136 @@
     export let data;
     export let form;
 
-
     const filter = writable("all");
 
-    $: filteredTexts = data?.texts
-        ? data.texts.filter((t) => {
-              if ($filter === "voted_yes") {
-                  return t.votes.some(
-                      (v) =>
-                          v.user_id === data.session.user.id &&
-                          v.vote === true &&
-                          (!v.skip || v.skip === 0)
-                  );
-              } else if ($filter === "voted_no") {
-                  return t.votes.some(
-                      (v) =>
-                          v.user_id === data.session.user.id &&
-                          v.vote === false &&
-                          (!v.skip || v.skip === 0)
-                  );
-              } else if ($filter === "skipped") {
-                  return t.votes.some(
-                      (v) => v.user_id === data.session.user.id && v.skip === 1
-                  );
-              } else {
-                  return (
-                      (!t.votes.some(
-                          (v) => v.user_id === data.session.user.id
-                      ) &&
-                          !t.votes.some(
-                              (v) =>
-                                  v.user_id === data.session.user.id &&
-                                  v.skip === 1
-                          )) ||
-                      t.votes.some(
+    // Make texts reactive for instant UI updates
+    let allTexts = data?.texts ? data.texts.map(t => ({ ...t, votes: [...t.votes] })) : [];
+    let tableVersion = 0; // Force table re-render
+    
+    // Debug: Log initial data
+    console.log('Initial data structure:', { 
+        dataExists: !!data, 
+        textsCount: data?.texts?.length || 0, 
+        allTextsCount: allTexts.length,
+        firstText: allTexts[0],
+        userID: data?.session?.user?.id
+    });
+
+    $: filteredTexts = allTexts
+        ? allTexts
+              .filter((t) => {
+                  if ($filter === "voted_yes") {
+                      return t.votes.some(
                           (v) =>
                               v.user_id === data.session.user.id &&
-                              (v.skip === 0 || v.skip === null) &&
-                              v.vote === null
-                      )
-                  );
-              }
-          }).slice(0, 200)
+                              v.vote === true &&
+                              (!v.skip || v.skip === 0)
+                      );
+                  } else if ($filter === "voted_no") {
+                      return t.votes.some(
+                          (v) =>
+                              v.user_id === data.session.user.id &&
+                              v.vote === false &&
+                              (!v.skip || v.skip === 0)
+                      );
+                  } else if ($filter === "skipped") {
+                      return t.votes.some(
+                          (v) =>
+                              v.user_id === data.session.user.id && v.skip === 1
+                      );
+                  } else {
+                      return (
+                          (!t.votes.some(
+                              (v) => v.user_id === data.session.user.id
+                          ) &&
+                              !t.votes.some(
+                                  (v) =>
+                                      v.user_id === data.session.user.id &&
+                                      v.skip === 1
+                              )) ||
+                          t.votes.some(
+                              (v) =>
+                                  v.user_id === data.session.user.id &&
+                                  (v.skip === 0 || v.skip === null) &&
+                                  v.vote === null
+                          )
+                      );
+                  }
+              })
+              .slice(0, 1000)
         : [];
 
-
-onMount(() => {
-    if (form?.success) {
-        toast.success(form.message);
-    } else if (form?.message) {
-        toast.error(form.message);
+    function onVoteUpdate(textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') {
+        console.log('onVoteUpdate called in parent:', { textId, voteType });
+        
+        // Find the text item
+        const tIdx = allTexts.findIndex(t => t.id === textId);
+        console.log('Text index found:', tIdx, 'in array of length:', allTexts.length);
+        
+        if (tIdx === -1) {
+            console.error('Text not found with id:', textId);
+            return;
+        }
+        
+        const userId = data.session.user.id;
+        console.log('User ID:', userId);
+        
+        // Find or create the vote object for this user
+        let vIdx = allTexts[tIdx].votes.findIndex(v => v.user_id === userId);
+        console.log('Vote index found:', vIdx);
+        
+        if (voteType === 'cancel') {
+            if (vIdx !== -1) {
+                allTexts[tIdx].votes.splice(vIdx, 1);
+                console.log('Vote removed');
+            }
+        } else if (voteType === 'skip') {
+            if (vIdx === -1) {
+                allTexts[tIdx].votes.push({ user_id: userId, vote: null, skip: 1 });
+                console.log('Skip vote added');
+            } else {
+                allTexts[tIdx].votes[vIdx].vote = null;
+                allTexts[tIdx].votes[vIdx].skip = 1;
+                console.log('Vote updated to skip');
+            }
+        } else {
+            if (vIdx === -1) {
+                allTexts[tIdx].votes.push({ user_id: userId, vote: voteType === 'yes', skip: 0 });
+                console.log('New vote added:', voteType);
+            } else {
+                allTexts[tIdx].votes[vIdx].vote = voteType === 'yes';
+                allTexts[tIdx].votes[vIdx].skip = 0;
+                console.log('Vote updated to:', voteType);
+            }
+        }
+        
+        console.log('Before reassignment - allTexts length:', allTexts.length);
+        // Force reactivity
+        allTexts = [...allTexts];
+        tableVersion++; // Force table re-render
+        console.log('After reassignment - allTexts length:', allTexts.length);
+        console.log('Table version updated to:', tableVersion);
+        console.log('Reactivity update complete');
     }
-});
 
-function applyQuery(value: string) {
-    // Clean up datatable and wrapper BEFORE changing filter
-    const wrapper = document.querySelector('.datatable-wrapper');
-    if (wrapper && wrapper.parentNode) {
-        wrapper.parentNode.removeChild(wrapper);
+    onMount(() => {
+        if (form?.success) {
+            toast.success(form.message);
+        } else if (form?.message) {
+            toast.error(form.message);
+        }
+    });
+
+    function applyQuery(value: string) {
+        // Clean up datatable and wrapper BEFORE changing filter
+        const wrapper = document.querySelector(".datatable-wrapper");
+        if (wrapper && wrapper.parentNode) {
+            wrapper.parentNode.removeChild(wrapper);
+        }
+        filter.set(value);
     }
-    filter.set(value);
-}
+
+    
 </script>
 
 <Toaster />
@@ -165,9 +234,9 @@ function applyQuery(value: string) {
 
 <div class="dark:bg-gray-900 dark:text-white bg-gray-300">
     <div class="container mx-auto p-1 mt-3 mb-10">
-       {#key $filter}
-           <SelectionTable filteredTexts={filteredTexts} />
-       {/key}
+        {#key `${$filter}-${tableVersion}`}
+            <SelectionTable {filteredTexts} currentFilter={$filter} onVoteUpdate={onVoteUpdate} />
+        {/key}
     </div>
 </div>
 

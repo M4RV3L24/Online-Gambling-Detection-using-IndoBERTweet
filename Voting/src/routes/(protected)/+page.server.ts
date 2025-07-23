@@ -139,7 +139,7 @@ export const actions: Actions = {
     },
 
     // Aksi baru untuk membatalkan vote
-    undoVote: async ({ request, locals: { supabase, safeGetSession } }) => {
+    "cancel-vote": async ({ request, locals: { supabase, safeGetSession } }) => {
         const { session } = await safeGetSession();
         if (!session) {
             return fail(401, { message: "You must be logged in." });
@@ -164,7 +164,7 @@ export const actions: Actions = {
             });
         }
 
-        return { success: true, message: "Vote undone!" };
+        return { success: true, message: "Vote cancelled successfully!" };
     },
 
     logout: async ({ locals: { supabase } }) => {

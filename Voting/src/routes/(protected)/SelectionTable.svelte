@@ -2,8 +2,10 @@
     import { onMount, onDestroy, tick } from "svelte";
     import { simpleDatatables } from "../../lib/simpleDatatables";
     export let filteredTexts: any[];
+    export let currentFilter: string;
     
-    import { enhance } from "$app/forms";
+    // Callback to update parent state instantly
+    export let onVoteUpdate: (textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') => void;
 
     let tableInstance: any;
 
@@ -39,10 +41,44 @@
                 firstLast: true,
                 nextPrev: true,
             });
+            
+            // Add event delegation for vote buttons after DataTable is initialized
+            setupEventDelegation();
+        }
+    }
+
+    function setupEventDelegation() {
+        if (typeof window === "undefined") return; // Ensure this runs only in the browser
+        // Remove existing listeners first
+        document.removeEventListener('click', handleDelegatedClick);
+        // Add new listener
+        document.addEventListener('click', handleDelegatedClick);
+    }
+
+    function handleDelegatedClick(event: Event) {
+        const target = event.target as HTMLElement;
+        const button = target.closest('button[data-vote-action]') as HTMLButtonElement;
+        
+        if (!button) return;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const textId = parseInt(button.getAttribute('data-text-id') || '0');
+        const voteType = button.getAttribute('data-vote-action') as 'yes' | 'no' | 'skip' | 'cancel';
+        
+        console.log('Button clicked via delegation:', { textId, voteType });
+        
+        if (textId && voteType) {
+            handleVote(textId, voteType);
         }
     }
 
     onDestroy(() => {
+        if (typeof window === "undefined") return; // Ensure this runs only in the browser
+        // Remove event listener
+        document.removeEventListener('click', handleDelegatedClick);
+        
         if (tableInstance) {
             tableInstance.destroy();
             // Remove datatable wrapper if it exists
@@ -52,6 +88,49 @@
             }
         }
     });
+
+    // Instant UI update and background fetch
+    async function handleVote(textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') {
+        console.log('handleVote called:', { textId, voteType });
+        
+        // Check if onVoteUpdate function exists
+        if (!onVoteUpdate) {
+            console.error('onVoteUpdate function is not provided!');
+            return;
+        }
+        
+        // Update UI immediately
+        console.log('Calling onVoteUpdate...');
+        onVoteUpdate(textId, voteType);
+        console.log('onVoteUpdate called successfully');
+        
+        // Send request to server in background
+        const formData = new FormData();
+        formData.append('text_id', textId.toString());
+        
+        let actionPath = '';
+        if (voteType === 'cancel') {
+            actionPath = '?/cancel-vote';
+        } else if (voteType === 'skip') {
+            actionPath = '?/skip';
+        } else {
+            actionPath = '?/vote';
+            formData.append('vote', voteType);
+        }
+        
+        console.log('Sending fetch request to:', window.location.pathname + actionPath);
+        
+        try {
+            const response = await fetch(window.location.pathname + actionPath, {
+                method: 'POST',
+                body: formData,
+                headers: { 'x-sveltekit-action': 'true' }
+            });
+            console.log('Server response:', response.status, response.statusText);
+        } catch (e) {
+            console.error('Vote failed:', e);
+        }
+    }
 </script>
 
 <table id="selection-table">
@@ -143,21 +222,11 @@
                             class="inline-flex rounded-md shadow-xs"
                             role="group"
                         >
-                            <form
-                                method="POST"
-                                action="?/vote"
-                                class="inline"
-                                use:enhance
-                            >
-                                <input
-                                    type="hidden"
-                                    name="text_id"
-                                    value={item.id}
-                                />
+                            {#if currentFilter === "all"}
                                 <button
-                                    type="submit"
-                                    name="vote"
-                                    value="yes"
+                                    type="button"
+                                    data-vote-action="yes"
+                                    data-text-id={item.id}
                                     class="btn-yes relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-lime-800"
                                 >
                                     <span
@@ -166,22 +235,10 @@
                                         Yes
                                     </span>
                                 </button>
-                            </form>
-                            <form
-                                method="POST"
-                                action="?/vote"
-                                class="inline"
-                                use:enhance
-                            >
-                                <input
-                                    type="hidden"
-                                    name="text_id"
-                                    value={item.id}
-                                />
                                 <button
-                                    type="submit"
-                                    name="vote"
-                                    value="no"
+                                    type="button"
+                                    data-vote-action="no"
+                                    data-text-id={item.id}
                                     class="btn-no relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
                                 >
                                     <span
@@ -190,19 +247,10 @@
                                         No
                                     </span>
                                 </button>
-                            </form>
-                            <form
-                                method="POST"
-                                action="?/skip"
-                                class="inline"
-                                use:enhance
-                            >
-                                <input
-                                    type="hidden"
-                                    name="text_id"
-                                    value={item.id}
-                                />
                                 <button
+                                    type="button"
+                                    data-vote-action="skip"
+                                    data-text-id={item.id}
                                     class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800"
                                 >
                                     <span
@@ -211,7 +259,20 @@
                                         Skip
                                     </span>
                                 </button>
-                            </form>
+                            {:else}
+                                <button
+                                    type="button"
+                                    data-vote-action="cancel"
+                                    data-text-id={item.id}
+                                    class="py-2.5 px-1 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
+                                >
+                                    <span
+                                        class="text-md relative px-10 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
+                                    >
+                                        Cancel
+                                    </span>
+                                </button>
+                            {/if}
                         </div>
                     </td>
                 </tr>
