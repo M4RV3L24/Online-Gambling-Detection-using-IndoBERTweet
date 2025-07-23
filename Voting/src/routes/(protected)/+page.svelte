@@ -1,51 +1,73 @@
 <script lang="ts">
     import { Toaster, toast } from "svelte-sonner";
-    import { onMount, afterUpdate } from "svelte";
+    import { onMount } from "svelte";
     import { enhance } from "$app/forms";
     import { flip } from "svelte/animate";
-    import { simpleDatatables } from "../../lib/simpleDatatables";
-    import { goto } from '$app/navigation';
-    import { page } from '$app/stores';
-
+    import SelectionTable from "./SelectionTable.svelte";
+    import { writable } from "svelte/store";
     export let data;
     export let form;
 
-    console.log("Data:", data);
 
-    let tableInstance;
-    function initDatatable() {
-        if (tableInstance) {
-            tableInstance.destroy();
-        }
-        const tableElement = document.getElementById("selection-table");
-        if (tableElement) {
-            tableInstance = new simpleDatatables.DataTable(tableElement, {
-                paging: true, // enable or disable pagination
-                perPage: 10, // set the number of rows per page
-                perPageSelect: [5, 10, 20, 50, 100, 200], // set the number of rows per page options
-                firstLast: true, // enable or disable the first and last buttons
-                nextPrev: true, // enable or disable the next and previous buttons
-            });
-        }
+    const filter = writable("all");
+
+    $: filteredTexts = data?.texts
+        ? data.texts.filter((t) => {
+              if ($filter === "voted_yes") {
+                  return t.votes.some(
+                      (v) =>
+                          v.user_id === data.session.user.id &&
+                          v.vote === true &&
+                          (!v.skip || v.skip === 0)
+                  );
+              } else if ($filter === "voted_no") {
+                  return t.votes.some(
+                      (v) =>
+                          v.user_id === data.session.user.id &&
+                          v.vote === false &&
+                          (!v.skip || v.skip === 0)
+                  );
+              } else if ($filter === "skipped") {
+                  return t.votes.some(
+                      (v) => v.user_id === data.session.user.id && v.skip === 1
+                  );
+              } else {
+                  return (
+                      (!t.votes.some(
+                          (v) => v.user_id === data.session.user.id
+                      ) &&
+                          !t.votes.some(
+                              (v) =>
+                                  v.user_id === data.session.user.id &&
+                                  v.skip === 1
+                          )) ||
+                      t.votes.some(
+                          (v) =>
+                              v.user_id === data.session.user.id &&
+                              (v.skip === 0 || v.skip === null) &&
+                              v.vote === null
+                      )
+                  );
+              }
+          }).slice(0, 200)
+        : [];
+
+
+onMount(() => {
+    if (form?.success) {
+        toast.success(form.message);
+    } else if (form?.message) {
+        toast.error(form.message);
     }
+});
 
-    afterUpdate(() => {
-        initDatatable();
-    });
-
-    onMount(() => {
-        if (form?.success) {
-            toast.success(form.message);
-        } else if (form?.message) {
-            toast.error(form.message);
-        }
-        initDatatable();
-    });
-
-function applyQuery(key: string, value: string) {
-    const searchParams = new URLSearchParams($page.url.searchParams);
-    searchParams.set(key, value);
-    window.location.search = searchParams.toString(); // Forces full reload and server-side load
+function applyQuery(value: string) {
+    // Clean up datatable and wrapper BEFORE changing filter
+    const wrapper = document.querySelector('.datatable-wrapper');
+    if (wrapper && wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+    }
+    filter.set(value);
 }
 </script>
 
@@ -55,10 +77,7 @@ function applyQuery(key: string, value: string) {
     <div
         class="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl p-4"
     >
-        <a
-            href="#"
-            class="flex items-center space-x-3 rtl:space-x-reverse"
-        >
+        <a href="/" class="flex items-center space-x-3 rtl:space-x-reverse">
             <img
                 src="https://flowbite.com/docs/images/logo.svg"
                 class="h-8"
@@ -94,36 +113,50 @@ function applyQuery(key: string, value: string) {
                 <li>
                     <a
                         href="/"
-                        on:click|preventDefault={() => applyQuery('filter', 'all')}
-                        class="text-gray-900 dark:text-white hover:underline"
-                        aria-current="page">All</a>
+                        on:click|preventDefault={() => applyQuery("all")}
+                        class="text-gray-900 dark:text-white hover:underline {$filter ===
+                        'all'
+                            ? 'font-bold underline'
+                            : ''}"
+                        aria-current="page">All</a
+                    >
                 </li>
                 <li>
                     <a
                         href="/"
-                        on:click|preventDefault={() => applyQuery('filter', 'voted_yes')}
-                        class="text-gray-900 dark:text-white hover:underline"
-                        >Yes Choice</a>
+                        on:click|preventDefault={() => applyQuery("voted_yes")}
+                        class="text-gray-900 dark:text-white hover:underline {$filter ===
+                        'voted_yes'
+                            ? 'font-bold underline'
+                            : ''}">Yes Choice</a
+                    >
                 </li>
                 <li>
                     <a
                         href="/"
-                        on:click|preventDefault={() => applyQuery('filter', 'voted_no')}
-                        class="text-gray-900 dark:text-white hover:underline"
-                        >No Choice</a>
+                        on:click|preventDefault={() => applyQuery("voted_no")}
+                        class="text-gray-900 dark:text-white hover:underline {$filter ===
+                        'voted_no'
+                            ? 'font-bold underline'
+                            : ''}">No Choice</a
+                    >
                 </li>
                 <li>
                     <a
                         href="/"
-                        on:click|preventDefault={() => applyQuery('filter', 'skipped')}
-                        class="text-gray-900 dark:text-white hover:underline"
-                        >Skipped</a>
+                        on:click|preventDefault={() => applyQuery("skipped")}
+                        class="text-gray-900 dark:text-white hover:underline {$filter ===
+                        'skipped'
+                            ? 'font-bold underline'
+                            : ''}">Skipped</a
+                    >
                 </li>
                 <li>
                     <a
-                        href="#"
+                        href="/"
                         class="text-gray-900 dark:text-white hover:underline"
-                        >Rules</a>
+                        >Rules</a
+                    >
                 </li>
             </ul>
         </div>
@@ -132,179 +165,9 @@ function applyQuery(key: string, value: string) {
 
 <div class="dark:bg-gray-900 dark:text-white bg-gray-300">
     <div class="container mx-auto p-1 mt-3 mb-10">
-        <table id="selection-table">
-            <thead>
-                <tr>
-                    <th
-                        class="bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                    >
-                        <span class="flex items-center">
-                            ID
-                            <svg
-                                class="w-4 h-4 ms-1"
-                                aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="m8 15 4 4 4-4m0-6-4-4-4 4"
-                                />
-                            </svg>
-                        </span>
-                    </th>
-                    <th
-                        class="bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                    >
-                        <span class="flex items-center">
-                            Comment Text
-                            <svg
-                                class="w-4 h-4 ms-1"
-                                aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="m8 15 4 4 4-4m0-6-4-4-4 4"
-                                />
-                            </svg>
-                        </span>
-                    </th>
-                    <th
-                        class="bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                    >
-                        <span class="flex items-center">
-                            Action
-                            <svg
-                                class="w-4 h-4 ms-1"
-                                aria-hidden="true"
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke="currentColor"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="m8 15 4 4 4-4m0-6-4-4-4 4"
-                                />
-                            </svg>
-                        </span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                {#if data.texts.length > 0}
-                    {#each data.texts as item (item.id)}
-                        <tr
-                            animate:flip
-                            class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer odd:dark:bg-gray-950 odd:bg-gray-200"
-                        >
-                            <td
-                                class=" mx-auto font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                            >
-                                {item.id}
-                            </td>
-                            <td class=" text-gray-900 dark:text-white"
-                                ><p class="">{item.text_content}</p></td
-                            >
-                            <td class="">
-                                <div
-                                    class="inline-flex rounded-md shadow-xs"
-                                    role="group"
-                                >
-                                    <form
-                                        method="POST"
-                                        action="?/vote"
-                                        class="inline"
-                                        use:enhance
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="text_id"
-                                            value={item.id}
-                                        />
-                                        <button
-                                            type="submit"
-                                            name="vote"
-                                            value="yes"
-                                            class="btn-yes relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-lime-800"
-                                        >
-                                            <span
-                                                class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
-                                            >
-                                                Yes
-                                            </span>
-                                        </button>
-                                    </form>
-                                    <form
-                                        method="POST"
-                                        action="?/vote"
-                                        class="inline"
-                                        use:enhance
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="text_id"
-                                            value={item.id}
-                                        />
-                                        <button
-                                            type="submit"
-                                            name="vote"
-                                            value="no"
-                                            class="btn-no relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
-                                        >
-                                            <span
-                                                class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
-                                            >
-                                                No
-                                            </span>
-                                        </button>
-                                    </form>
-                                    <form
-                                        method="POST"
-                                        action="?/skip"
-                                        class="inline"
-                                        use:enhance
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="text_id"
-                                            value={item.id}
-                                        />
-                                        <button
-                                            class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800"
-                                        >
-                                            <span
-                                                class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
-                                            >
-                                                Skip
-                                            </span>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    {/each}
-                {:else}{/if}
-            </tbody>
-        </table>
+       {#key $filter}
+           <SelectionTable filteredTexts={filteredTexts} />
+       {/key}
     </div>
 </div>
 

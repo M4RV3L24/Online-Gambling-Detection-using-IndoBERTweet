@@ -36,34 +36,8 @@ export const load: PageServerLoad = async ({
     // Eksekusi kueri
     const { data: texts, error: dbError } = await query;
 
-    // Server-side filter for current user
-    let filteredTexts = texts ?? [];
-    if (filterBy === "voted_yes") {
-        filteredTexts = filteredTexts.filter((t) =>
-            t.votes.some((v) => v.user_id === session.user.id && v.vote === true && (!v.skip || v.skip === 0))
-        );
-    } else if (filterBy === "voted_no") {
-        filteredTexts = filteredTexts.filter((t) =>
-            t.votes.some((v) => v.user_id === session.user.id && v.vote === false && (!v.skip || v.skip === 0))
-        );
-    } else if (filterBy === "all") {
-        // Show only texts that are unvoted and not skipped by the current user
-        filteredTexts = filteredTexts.filter((t) =>
-            (!t.votes.some((v) => v.user_id === session.user.id) &&
-            !t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)) ||
-            t.votes.some((v) => v.user_id === session.user.id && (v.skip === 0 || v.skip === null) && v.vote === null)
-        );
-    } else if (filterBy === "skipped") {
-        // Show only texts that are skipped by the current user
-        filteredTexts = filteredTexts.filter((t) =>
-            t.votes.some((v) => v.user_id === session.user.id && v.skip === 1)
-        );
-    } else {
-        // Default to showing all texts if filter is not recognized
-        filteredTexts = texts ?? [];
-        
-    }
-    filteredTexts = filteredTexts.slice(0, 200);
+    // Return all texts for the current user, filtering will be done on the client
+    // const filteredTexts = texts ? texts.slice(0, 200) : [];
 
     const { count: already_vote_count, error: countError } = await supabase
         .from("votes")
@@ -82,7 +56,7 @@ export const load: PageServerLoad = async ({
 
     return {
         already_vote_count: already_vote_count ?? 0,
-        texts: filteredTexts ?? [],
+        texts: texts ?? [],
         sortBy,
         filterBy,
     };
