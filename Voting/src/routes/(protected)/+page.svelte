@@ -197,7 +197,48 @@
         } else if (form?.message) {
             toast.error(form.message);
         }
+        
+        // Initialize Flowbite modals
+        if (typeof window !== 'undefined') {
+            // Import and initialize Flowbite
+            import('flowbite').then((flowbite) => {
+                flowbite.initModals();
+            }).catch(() => {
+                // Fallback: Manual modal handling if Flowbite is not available
+                console.log('Flowbite not found, using manual modal handling');
+                setupManualModal();
+            });
+        }
     });
+
+    function setupManualModal() {
+        const modal = document.getElementById('default-modal');
+        const openButton = document.querySelector('[data-modal-target="default-modal"]');
+        const closeButtons = document.querySelectorAll('[data-modal-hide="default-modal"]');
+        
+        if (openButton && modal) {
+            openButton.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+        }
+        
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            });
+        });
+        
+        // Close on backdrop click
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        });
+    }
+
 
     function applyQuery(value: string) {
         // Clean up datatable and wrapper BEFORE changing filter
@@ -294,10 +335,12 @@
                     >
                 </li>
                 <li>
-                    <a
-                        href="/"
+                    <button
+                        data-modal-target="default-modal" 
+                        data-modal-toggle="default-modal"
                         class="text-gray-900 dark:text-white hover:underline"
-                        >Rules</a
+                        type="button"
+                        >Rules</button
                     >
                 </li>
             </ul>
@@ -320,6 +363,13 @@
         {/key}
     </div>
 </div>
+
+
+
+
+<!-- Flowbite Modal for Rules -->
+
+
 
 <style lang="postcss">
     @reference "tailwindcss";
