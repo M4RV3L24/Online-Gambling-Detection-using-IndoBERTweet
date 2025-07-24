@@ -115,7 +115,7 @@
                     </div>
 
                     <!-- Terms and Conditions -->
-                    <div class="flex items-start">
+                    <!-- <div class="flex items-start">
                         <div class="flex items-center h-5">
                             <input
                                 id="terms"
@@ -136,7 +136,7 @@
                                 ></label
                             >
                         </div>
-                    </div>
+                    </div> -->
 
                     <!-- Submit Button -->
                     <button

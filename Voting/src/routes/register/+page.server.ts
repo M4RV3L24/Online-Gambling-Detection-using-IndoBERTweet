@@ -58,11 +58,12 @@ export const actions: Actions = {
         }
 
         // Sign up with Supabase
+        const requestUrl = new URL(request.url);
         const { error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-                emailRedirectTo: `${new URL(request.url).origin}/`,
+                emailRedirectTo: `${requestUrl.origin}/auth/confirm`,
                 // data: {
                 //     full_name: name
                 // }
