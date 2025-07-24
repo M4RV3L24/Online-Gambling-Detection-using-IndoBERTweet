@@ -12,7 +12,7 @@ let { children } = $props();
 
 
 <div id="default-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full mx-auto">
-    <div class="relative p-4 w-full min-w-[40%] max-w-2xl max-h-full">
+    <div class="relative p-4 w-full min-w-[90%] sm:min-w-[80%] md:min-w-[60%] lg:min-w-[50%] max-w-2xl max-h-full">
         <!-- Modal content -->
         <div class="relative bg-white rounded-lg shadow-lg dark:bg-gray-700">
             <!-- Modal header -->
@@ -49,6 +49,18 @@ let { children } = $props();
                     <strong>5. You can cancel your vote anytime before submitting.</strong><br>
                     Use the cancel button to remove your vote if you change your mind.
                 </p>
+                
+                <hr class="border-gray-300 dark:border-gray-600">
+                
+                <div class="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+                    <strong class="text-gray-700 dark:text-gray-200">Kriteria Konten Judi Online:</strong>
+                    <ul class=" space-y-1 text-gray-500 list-disc list-inside dark:text-gray-400">
+                        <li>Mengandung kalimat yang secara terang-terangan mengajak atau mengundang untuk berpartisipasi dalam aktivitas judi online.</li>
+                        <li>Menyebutkan nama platform, menyertakan tautan (link) aktif, atau pola URL yang mengarah ke situs judi online.</li>
+                        <li>Menunjukkan atau mengklaim hasil kemenangan, pencapaian (maxwin, jackpot), atau kemudahan penarikan dana (WD) dari aktivitas judi.</li>
+                        <li>Memberikan arahan, tutorial, atau panduan tentang cara mendaftar, melakukan deposit, atau bermain di platform judi online.</li>
+                    </ul>
+                </div>
             </div>
             <!-- Modal footer -->
             <div class="flex items-center p-4 md:p-5 border-t border-gray-200 rounded-b dark:border-gray-600">
