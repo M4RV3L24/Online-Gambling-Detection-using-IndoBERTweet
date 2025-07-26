@@ -8,6 +8,7 @@
     export let onVoteUpdate: (textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') => void;
 
     let tableInstance: any;
+    let initTimeout: any;
 
     onMount(async () => {
         await tick();
@@ -15,36 +16,65 @@
     });
 
     $: if (filteredTexts) {
-        tick().then(() => {
-            initDatatable();
-        });
+        // Debounce rapid table updates
+        if (initTimeout) clearTimeout(initTimeout);
+        initTimeout = setTimeout(() => {
+            tick().then(() => {
+                initDatatable();
+            });
+        }, 20);
     }
 
     function initDatatable() {
         if (typeof window === "undefined") return; // Ensure this runs only in the browser
         // Clean up previous instance if it exists
-        if (tableInstance) {
-            tableInstance.destroy();
-            const wrapper = document.querySelector(".datatable-wrapper");
-            if (wrapper && wrapper.parentNode) {
-                wrapper.parentNode.removeChild(wrapper);
+        setTimeout(() => {
+            if (tableInstance) {
+                tableInstance.destroy();
+                
+                // Clean up ALL datatable wrappers and containers
+                const allWrappers = document.querySelectorAll(".datatable-wrapper");
+                allWrappers.forEach(wrapper => {
+                    if (wrapper && wrapper.parentNode) {
+                        wrapper.parentNode.removeChild(wrapper);
+                    }
+                });
+                
+                const allContainers = document.querySelectorAll(".datatable-container");
+                allContainers.forEach(container => {
+                    if (container && container.parentNode) {
+                        container.parentNode.removeChild(container);
+                    }
+                });
             }
-        }
-        const tableElement = document.getElementById(
-            "selection-table"
-        ) as HTMLTableElement | null;
-        if (tableElement) {
-            tableInstance = new simpleDatatables.DataTable(tableElement, {
-                paging: true,
-                perPage: 10,
-                perPageSelect: [5, 10, 20, 50, 100, 200],
-                firstLast: true,
-                nextPrev: true,
-            });
-            
-            // Add event delegation for vote buttons after DataTable is initialized
-            setupEventDelegation();
-        }
+            const tableElement = document.getElementById(
+                "selection-table"
+            ) as HTMLTableElement | null;
+            if (tableElement) {
+                // Check if table is already wrapped by DataTable
+                const existingWrapper = tableElement.closest('.datatable-wrapper');
+                if (existingWrapper) {
+                    // If already wrapped, clean it up first
+                    const parent = existingWrapper.parentNode;
+                    if (parent) {
+                        parent.appendChild(tableElement); // Move table out of wrapper
+                        parent.removeChild(existingWrapper); // Remove wrapper
+                    }
+                }
+
+                tableInstance = new simpleDatatables.DataTable(tableElement, {
+                    paging: true,
+                    perPage: 10,
+                    perPageSelect: [5, 10, 20, 50, 100, 200],
+                    firstLast: true,
+                    nextPrev: true,
+                });
+                
+                // Add event delegation for vote buttons after DataTable is initialized
+                setupEventDelegation();
+            }
+        }, 10);
+        
     }
 
     function setupEventDelegation() {
@@ -60,6 +90,13 @@
         const button = target.closest('button[data-vote-action]') as HTMLButtonElement;
         
         if (!button) return;
+        // Make sure this button belongs to our specific table
+        const ourTable = document.getElementById('selection-table');
+        if (!ourTable || !ourTable.contains(button)) return;
+        
+        // Also check if the button is within a DataTable wrapper to avoid conflicts
+        const datatableWrapper = button.closest('.datatable-wrapper');
+        if (!datatableWrapper) return;
         
         event.preventDefault();
         event.stopPropagation();
@@ -76,16 +113,28 @@
 
     onDestroy(() => {
         if (typeof window === "undefined") return; // Ensure this runs only in the browser
+        // Clear any pending initialization
+        if (initTimeout) clearTimeout(initTimeout);
         // Remove event listener
         document.removeEventListener('click', handleDelegatedClick);
         
         if (tableInstance) {
             tableInstance.destroy();
             // Remove datatable wrapper if it exists
-            const wrapper = document.querySelector(".datatable-wrapper");
-            if (wrapper && wrapper.parentNode) {
-                wrapper.parentNode.removeChild(wrapper);
-            }
+            // Clean up all DataTable elements
+            const allWrappers = document.querySelectorAll(".datatable-wrapper");
+            allWrappers.forEach(wrapper => {
+                if (wrapper && wrapper.parentNode) {
+                    wrapper.parentNode.removeChild(wrapper);
+                }
+            });
+            
+            const allContainers = document.querySelectorAll(".datatable-container");
+            allContainers.forEach(container => {
+                if (container && container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+            });
         }
     });
 
