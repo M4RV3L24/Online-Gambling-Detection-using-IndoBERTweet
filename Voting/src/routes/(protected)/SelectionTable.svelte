@@ -44,7 +44,7 @@
         if (typeof window === "undefined") return; // Ensure this runs only in the browser
         
         await tick();
-        populateTableBody();
+        await populateTableBody(); // Wait for table body to be fully populated
         initDatatable();
     });
 
@@ -57,8 +57,8 @@
                 // Initial table creation
                 if (initTimeout) clearTimeout(initTimeout);
                 initTimeout = setTimeout(() => {
-                    tick().then(() => {
-                        populateTableBody();
+                    tick().then(async () => {
+                        await populateTableBody(); // Wait for completion
                         initDatatable();
                     });
                 }, 20);
@@ -86,78 +86,102 @@
         const batchSize = 100; // Process 100 rows at a time
         let currentIndex = 0;
         
-        const processBatch = () => {
-            const endIndex = Math.min(currentIndex + batchSize, filteredTexts.length);
-            
-            for (let i = currentIndex; i < endIndex; i++) {
-                const item = filteredTexts[i];
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer odd:dark:bg-gray-950 odd:bg-gray-200';
+        return new Promise<void>((resolve) => {
+            const processBatch = () => {
+                const endIndex = Math.min(currentIndex + batchSize, filteredTexts.length);
                 
-                // Use optimized template with caching
-                const buttonHTML = getButtonTemplate(item.id, isAllFilter);
+                for (let i = currentIndex; i < endIndex; i++) {
+                    const item = filteredTexts[i];
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer odd:dark:bg-gray-950 odd:bg-gray-200';
+                    
+                    // Use optimized template with caching
+                    const buttonHTML = getButtonTemplate(item.id, isAllFilter);
+                    
+                    row.innerHTML = `
+                        <td class="mx-auto font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.id}</td>
+                        <td class="text-gray-900 dark:text-white"><p>${item.text_content}</p></td>
+                        <td>
+                            <div class="inline-flex rounded-md shadow-xs" role="group">
+                                ${buttonHTML}
+                            </div>
+                        </td>
+                    `;
+                    
+                    fragment.appendChild(row);
+                }
                 
-                row.innerHTML = `
-                    <td class="mx-auto font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.id}</td>
-                    <td class="text-gray-900 dark:text-white"><p>${item.text_content}</p></td>
-                    <td>
-                        <div class="inline-flex rounded-md shadow-xs" role="group">
-                            ${buttonHTML}
-                        </div>
-                    </td>
-                `;
+                currentIndex = endIndex;
                 
-                fragment.appendChild(row);
-            }
+                // Continue processing if there are more rows
+                if (currentIndex < filteredTexts.length) {
+                    // Use requestAnimationFrame to avoid blocking the UI
+                    requestAnimationFrame(processBatch);
+                } else {
+                    // All done, append to DOM in one operation
+                    tbody.appendChild(fragment);
+                    resolve(); // Signal completion
+                }
+            };
             
-            currentIndex = endIndex;
-            
-            // Continue processing if there are more rows
-            if (currentIndex < filteredTexts.length) {
-                // Use requestAnimationFrame to avoid blocking the UI
-                requestAnimationFrame(processBatch);
+            // Start batch processing
+            if (filteredTexts.length > 0) {
+                processBatch();
             } else {
-                // All done, append to DOM in one operation
-                tbody.appendChild(fragment);
+                resolve(); // No data to process
             }
-        };
-        
-        // Start batch processing
-        if (filteredTexts.length > 0) {
-            processBatch();
-        }
+        });
     }
 
     function initDatatable() {
         if (typeof window === "undefined") return; // Ensure this runs only in the browser
+        
+        // More aggressive cleanup to prevent duplicate headers
+        const cleanupAllDataTables = () => {
+            // Destroy any existing instances
+            if (tableInstance) {
+                try {
+                    tableInstance.destroy();
+                } catch (e) {
+                    // Ignore destroy errors
+                }
+                tableInstance = null;
+            }
+            
+            // Remove all DataTable wrappers and containers
+            const selectors = [
+                ".datatable-wrapper", 
+                ".datatable-container", 
+                ".dataTable-wrapper",
+                ".dataTable-container"
+            ];
+            
+            selectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(element => {
+                    if (element && element.parentNode) {
+                        // Move any child tables back to parent before removing wrapper
+                        const tables = element.querySelectorAll('table');
+                        tables.forEach(table => {
+                            if (element.parentNode) {
+                                element.parentNode.insertBefore(table, element);
+                            }
+                        });
+                        element.parentNode.removeChild(element);
+                    }
+                });
+            });
+        };
+        
         // Clean up previous instance if it exists
         setTimeout(() => {
-            if (tableInstance) {
-                tableInstance.destroy();
-                
-                // Clean up ALL datatable wrappers and containers
-                const allWrappers = document.querySelectorAll(".datatable-wrapper");
-                allWrappers.forEach(wrapper => {
-                    if (wrapper && wrapper.parentNode) {
-                        wrapper.parentNode.removeChild(wrapper);
-                    }
-                });
-                
-                const allContainers = document.querySelectorAll(".datatable-container");
-                allContainers.forEach(container => {
-                    if (container && container.parentNode) {
-                        container.parentNode.removeChild(container);
-                    }
-                });
-            }
-            const tableElement = document.getElementById(
-                "selection-table"
-            ) as HTMLTableElement | null;
+            cleanupAllDataTables();
+            
+            const tableElement = document.getElementById("selection-table") as HTMLTableElement | null;
             if (tableElement) {
-                // Check if table is already wrapped by DataTable
-                const existingWrapper = tableElement.closest('.datatable-wrapper');
+                // Ensure table is not already wrapped
+                const existingWrapper = tableElement.closest('.datatable-wrapper, .dataTable-wrapper');
                 if (existingWrapper) {
-                    // If already wrapped, clean it up first
                     const parent = existingWrapper.parentNode;
                     if (parent) {
                         parent.appendChild(tableElement); // Move table out of wrapper
@@ -165,21 +189,23 @@
                     }
                 }
 
-                tableInstance = new simpleDatatables.DataTable(tableElement, {
-                    paging: true,
-                    perPage: 10,
-                    perPageSelect: [5, 10, 20, 50, 100, 200],
-                    firstLast: true,
-                    nextPrev: true,
-                });
-                
-                // Add event delegation for vote buttons after DataTable is initialized
-                setupEventDelegation();
-                isTableInitialized = true;
-                lastFilteredTexts = [...filteredTexts];
+                // Wait a bit more to ensure DOM is clean
+                setTimeout(() => {
+                    tableInstance = new simpleDatatables.DataTable(tableElement, {
+                        paging: true,
+                        perPage: 10,
+                        perPageSelect: [5, 10, 20, 50, 100, 200],
+                        firstLast: true,
+                        nextPrev: true,
+                    });
+                    
+                    // Add event delegation for vote buttons after DataTable is initialized
+                    setupEventDelegation();
+                    isTableInitialized = true;
+                    lastFilteredTexts = [...filteredTexts];
+                }, 50);
             }
         }, 10);
-        
     }
 
     function rebuildTable() {
@@ -193,7 +219,7 @@
         // Full table rebuild for filter changes or major data updates
         if (initTimeout) clearTimeout(initTimeout);
         initTimeout = setTimeout(() => {
-            tick().then(() => {
+            tick().then(async () => {
                 if (tableInstance) {
                     tableInstance.destroy();
                     
@@ -206,8 +232,8 @@
                     });
                 }
                 
-                // Repopulate table body with new data
-                populateTableBody();
+                // Repopulate table body with new data and wait for completion
+                await populateTableBody();
                 
                 const tableElement = document.getElementById("selection-table") as HTMLTableElement | null;
                 if (tableElement) {
