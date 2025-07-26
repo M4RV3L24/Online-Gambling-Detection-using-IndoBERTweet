@@ -9,20 +9,123 @@
 
     let tableInstance: any;
     let initTimeout: any;
+    let isTableInitialized = false;
+    let lastFilteredTexts: any[] = [];
+    
+    // Performance cache for button templates
+    let buttonTemplateCache = new Map();
+    
+    // Pre-compile button templates for better performance
+    function getButtonTemplate(itemId: number, isAllFilter: boolean) {
+        const cacheKey = `${isAllFilter ? 'all' : 'voted'}-template`;
+        
+        if (!buttonTemplateCache.has(cacheKey)) {
+            const template = isAllFilter ? 
+                `<button type="button" data-vote-action="yes" data-text-id="ID_PLACEHOLDER" class="btn-yes relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-lime-800">
+                    <span class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">Yes</span>
+                </button>
+                <button type="button" data-vote-action="no" data-text-id="ID_PLACEHOLDER" class="btn-no relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400">
+                    <span class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">No</span>
+                </button>
+                <button type="button" data-vote-action="skip" data-text-id="ID_PLACEHOLDER" class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
+                    <span class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">Skip</span>
+                </button>` :
+                `<button type="button" data-vote-action="cancel" data-text-id="ID_PLACEHOLDER" class="py-2.5 px-1 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
+                    <span class="text-md relative px-10 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">Cancel</span>
+                </button>`;
+            
+            buttonTemplateCache.set(cacheKey, template);
+        }
+        
+        return buttonTemplateCache.get(cacheKey).replace(/ID_PLACEHOLDER/g, itemId);
+    }
 
     onMount(async () => {
+        if (typeof window === "undefined") return; // Ensure this runs only in the browser
+        
         await tick();
+        populateTableBody();
         initDatatable();
     });
 
-    $: if (filteredTexts) {
-        // Debounce rapid table updates
-        if (initTimeout) clearTimeout(initTimeout);
-        initTimeout = setTimeout(() => {
-            tick().then(() => {
-                initDatatable();
-            });
-        }, 20);
+    // Reactive statement to handle data changes
+    $: if (filteredTexts && typeof window !== "undefined") {
+        const hasChanged = JSON.stringify(filteredTexts) !== JSON.stringify(lastFilteredTexts);
+        if (hasChanged) {
+            lastFilteredTexts = [...filteredTexts];
+            if (!isTableInitialized) {
+                // Initial table creation
+                if (initTimeout) clearTimeout(initTimeout);
+                initTimeout = setTimeout(() => {
+                    tick().then(() => {
+                        populateTableBody();
+                        initDatatable();
+                    });
+                }, 20);
+            } else {
+                // Update existing table
+                rebuildTable();
+            }
+        }
+    }
+
+    function populateTableBody() {
+        if (typeof window === "undefined") return; // Ensure this runs only in the browser
+        
+        const tbody = document.querySelector('#selection-table tbody');
+        if (!tbody) return;
+        
+        // Performance optimization: Use DocumentFragment for batch DOM operations
+        const fragment = document.createDocumentFragment();
+        const isAllFilter = currentFilter === "all";
+        
+        // Clear existing content
+        tbody.innerHTML = '';
+        
+        // Batch process rows in chunks to avoid blocking UI
+        const batchSize = 100; // Process 100 rows at a time
+        let currentIndex = 0;
+        
+        const processBatch = () => {
+            const endIndex = Math.min(currentIndex + batchSize, filteredTexts.length);
+            
+            for (let i = currentIndex; i < endIndex; i++) {
+                const item = filteredTexts[i];
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer odd:dark:bg-gray-950 odd:bg-gray-200';
+                
+                // Use optimized template with caching
+                const buttonHTML = getButtonTemplate(item.id, isAllFilter);
+                
+                row.innerHTML = `
+                    <td class="mx-auto font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.id}</td>
+                    <td class="text-gray-900 dark:text-white"><p>${item.text_content}</p></td>
+                    <td>
+                        <div class="inline-flex rounded-md shadow-xs" role="group">
+                            ${buttonHTML}
+                        </div>
+                    </td>
+                `;
+                
+                fragment.appendChild(row);
+            }
+            
+            currentIndex = endIndex;
+            
+            // Continue processing if there are more rows
+            if (currentIndex < filteredTexts.length) {
+                // Use requestAnimationFrame to avoid blocking the UI
+                requestAnimationFrame(processBatch);
+            } else {
+                // All done, append to DOM in one operation
+                tbody.appendChild(fragment);
+            }
+        };
+        
+        // Start batch processing
+        if (filteredTexts.length > 0) {
+            processBatch();
+        }
     }
 
     function initDatatable() {
@@ -72,9 +175,69 @@
                 
                 // Add event delegation for vote buttons after DataTable is initialized
                 setupEventDelegation();
+                isTableInitialized = true;
+                lastFilteredTexts = [...filteredTexts];
             }
         }, 10);
         
+    }
+
+    function rebuildTable() {
+        // Preserve current pagination state
+        const currentPage = tableInstance?.currentPage || 1;
+        const perPage = tableInstance?.options?.perPage || 10;
+        
+        // Update tracking first to prevent infinite loops
+        lastFilteredTexts = [...filteredTexts];
+        
+        // Full table rebuild for filter changes or major data updates
+        if (initTimeout) clearTimeout(initTimeout);
+        initTimeout = setTimeout(() => {
+            tick().then(() => {
+                if (tableInstance) {
+                    tableInstance.destroy();
+                    
+                    // Clean up wrappers
+                    const allWrappers = document.querySelectorAll(".datatable-wrapper");
+                    allWrappers.forEach(wrapper => {
+                        if (wrapper && wrapper.parentNode) {
+                            wrapper.parentNode.removeChild(wrapper);
+                        }
+                    });
+                }
+                
+                // Repopulate table body with new data
+                populateTableBody();
+                
+                const tableElement = document.getElementById("selection-table") as HTMLTableElement | null;
+                if (tableElement) {
+                    tableInstance = new simpleDatatables.DataTable(tableElement, {
+                        paging: true,
+                        perPage: perPage,
+                        perPageSelect: [5, 10, 20, 50, 100, 200],
+                        firstLast: true,
+                        nextPrev: true,
+                    });
+                    
+                    // Restore pagination if possible
+                    if (currentPage > 1) {
+                        setTimeout(() => {
+                            try {
+                                const totalPages = Math.ceil(filteredTexts.length / perPage);
+                                const targetPage = Math.min(currentPage, totalPages);
+                                if (targetPage > 1) {
+                                    tableInstance.page(targetPage);
+                                }
+                            } catch (e) {
+                                // Ignore page restoration errors
+                            }
+                        }, 100);
+                    }
+                    
+                    setupEventDelegation();
+                }
+            });
+        }, 20);
     }
 
     function setupEventDelegation() {
@@ -115,43 +278,52 @@
         if (typeof window === "undefined") return; // Ensure this runs only in the browser
         // Clear any pending initialization
         if (initTimeout) clearTimeout(initTimeout);
+        isTableInitialized = false;
+        
         // Remove event listener
         document.removeEventListener('click', handleDelegatedClick);
         
         if (tableInstance) {
-            tableInstance.destroy();
-            // Remove datatable wrapper if it exists
-            // Clean up all DataTable elements
-            const allWrappers = document.querySelectorAll(".datatable-wrapper");
-            allWrappers.forEach(wrapper => {
-                if (wrapper && wrapper.parentNode) {
-                    wrapper.parentNode.removeChild(wrapper);
-                }
-            });
-            
-            const allContainers = document.querySelectorAll(".datatable-container");
-            allContainers.forEach(container => {
-                if (container && container.parentNode) {
-                    container.parentNode.removeChild(container);
-                }
-            });
+            try {
+                tableInstance.destroy();
+            } catch (e) {
+                // Ignore destroy errors
+            }
+            tableInstance = null;
         }
+        
+        // Clean up all DataTable elements
+        const allWrappers = document.querySelectorAll(".datatable-wrapper");
+        allWrappers.forEach(wrapper => {
+            if (wrapper && wrapper.parentNode) {
+                wrapper.parentNode.removeChild(wrapper);
+            }
+        });
+        
+        const allContainers = document.querySelectorAll(".datatable-container");
+        allContainers.forEach(container => {
+            if (container && container.parentNode) {
+                container.parentNode.removeChild(container);
+            }
+        });
+        
+        // Clear template cache to free memory
+        buttonTemplateCache.clear();
     });
 
     // Instant UI update and background fetch
     async function handleVote(textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') {
-        // console.log('handleVote called:', { textId, voteType });
-        
         // Check if onVoteUpdate function exists
         if (!onVoteUpdate) {
             console.error('onVoteUpdate function is not provided!');
             return;
         }
         
-        // Update UI immediately
-        // console.log('Calling onVoteUpdate...');
+        // Apply visual feedback immediately
+        animateRowRemoval(textId);
+        
+        // Update parent state instantly
         onVoteUpdate(textId, voteType);
-        // console.log('onVoteUpdate called successfully');
         
         // Send request to server in background
         const formData = new FormData();
@@ -167,17 +339,47 @@
             formData.append('vote', voteType);
         }
         
-        // console.log('Sending fetch request to:', window.location.pathname + actionPath);
-        
         try {
             const response = await fetch(window.location.pathname + actionPath, {
                 method: 'POST',
                 body: formData,
                 headers: { 'x-sveltekit-action': 'true' }
             });
-            // console.log('Server response:', response.status, response.statusText);
         } catch (e) {
             console.error('Vote failed:', e);
+        }
+    }
+    
+    function animateRowRemoval(textId: number) {
+        try {
+            // Find the row with the specific text ID
+            const tableBody = document.querySelector('#selection-table tbody');
+            if (!tableBody) return;
+            
+            const rows = tableBody.querySelectorAll('tr');
+            const targetRow = Array.from(rows).find(row => {
+                const button = row.querySelector(`[data-text-id="${textId}"]`);
+                return button !== null;
+            });
+            
+            if (targetRow) {
+                // Add smooth fade-out animation
+                (targetRow as HTMLElement).style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                (targetRow as HTMLElement).style.opacity = '0';
+                (targetRow as HTMLElement).style.transform = 'scale(0.95)';
+                (targetRow as HTMLElement).style.pointerEvents = 'none';
+                
+                // Remove the row after animation
+                setTimeout(() => {
+                    try {
+                        targetRow.remove();
+                    } catch (e) {
+                        // Ignore removal errors
+                    }
+                }, 300);
+            }
+        } catch (error) {
+            console.error('Error animating row removal:', error);
         }
     }
 </script>
@@ -260,72 +462,21 @@
         </tr>
     </thead>
     <tbody>
-        {#if filteredTexts.length > 0}
-            {#each filteredTexts as item (item.id)}
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer odd:dark:bg-gray-950 odd:bg-gray-200">
-                    <td class="mx-auto font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.id}</td>
-                    <td class="text-gray-900 dark:text-white"><p>{item.text_content}</p></td>
-                    <td>
-                        <!-- ...existing action buttons... -->
-                        <div
-                            class="inline-flex rounded-md shadow-xs"
-                            role="group"
-                        >
-                            {#if currentFilter === "all"}
-                                <button
-                                    type="button"
-                                    data-vote-action="yes"
-                                    data-text-id={item.id}
-                                    class="btn-yes relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-teal-300 to-lime-300 group-hover:from-teal-300 group-hover:to-lime-300 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-lime-200 dark:focus:ring-lime-800"
-                                >
-                                    <span
-                                        class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
-                                    >
-                                        Yes
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    data-vote-action="no"
-                                    data-text-id={item.id}
-                                    class="btn-no relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
-                                >
-                                    <span
-                                        class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
-                                    >
-                                        No
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    data-vote-action="skip"
-                                    data-text-id={item.id}
-                                    class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800"
-                                >
-                                    <span
-                                        class="text-md relative px-6 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
-                                    >
-                                        Skip
-                                    </span>
-                                </button>
-                            {:else}
-                                <button
-                                    type="button"
-                                    data-vote-action="cancel"
-                                    data-text-id={item.id}
-                                    class="py-2.5 px-1 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700"
-                                >
-                                    <span
-                                        class="text-md relative px-10 py-2 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent"
-                                    >
-                                        Cancel
-                                    </span>
-                                </button>
-                            {/if}
-                        </div>
-                    </td>
-                </tr>
-            {/each}
-        {:else}{/if}
+        <!-- Table body is populated manually via JavaScript to avoid Svelte reactivity issues -->
     </tbody>
 </table>
+
+<style lang="postcss">
+    @reference "tailwindcss";
+    :global(html) {
+        background-color: theme(--color-gray-100);
+    }
+
+    /* Force border between datatable rows, override simple-datatables */
+    :global(#selection-table tbody tr) {
+        border-bottom: 1px solid #e5e7eb !important; /* Tailwind gray-200 */
+    }
+    :global(.dark #selection-table tbody tr) {
+        border-bottom: 1px solid #374151 !important; /* Tailwind gray-700 */
+    }
+</style>
