@@ -16,7 +16,8 @@
     
     // Pagination settings for large datasets
     let currentPage = 1;
-    let itemsPerPage = 300; // Show 500 items per page for performance
+    let itemsPerPage = 300; // Default items per page
+    let itemsPerPageOptions = [100, 200, 300, 500, 1000]; // Available options
     
     // Calculate pagination
     $: totalPages = Math.ceil((filteredTextsAll?.length || 0) / itemsPerPage);
@@ -266,6 +267,21 @@
         }
     }
 
+    function changeItemsPerPage(newItemsPerPage: number) {
+        // Calculate what item we're currently viewing
+        const currentItemIndex = (currentPage - 1) * itemsPerPage + 1;
+        
+        // Update items per page
+        itemsPerPage = newItemsPerPage;
+        
+        // Calculate which page the current item should be on with new page size
+        const newPage = Math.ceil(currentItemIndex / itemsPerPage);
+        currentPage = Math.min(newPage, Math.ceil(filteredTextsAll.length / itemsPerPage));
+        
+        // Force table re-render
+        tableVersion++;
+    }
+
     
 </script>
 
@@ -366,7 +382,7 @@
 <div class="dark:bg-gray-900 dark:text-white bg-gray-300">
     <div class="container mx-auto p-1 mt-3 mb-10">
         <!-- Pagination Controls -->
-        {#if filteredTextsAll.length > itemsPerPage}
+        {#if filteredTextsAll.length > Math.min(...itemsPerPageOptions)}
             <div class="mb-4 flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
                 <div class="mb-2 sm:mb-0">
                     <span class="text-sm text-gray-700 dark:text-gray-300">
@@ -376,26 +392,45 @@
                     </span>
                 </div>
                 
-                <div class="flex items-center space-x-2">
-                    <button 
-                        on:click={prevPage}
-                        disabled={currentPage === 1}
-                        class="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
-                    >
-                        Previous
-                    </button>
+                <div class="flex items-center space-x-4">
+                    <!-- Items per page selector -->
+                    <div class="flex items-center space-x-2">
+                        <label for="itemsPerPage" class="text-sm text-gray-700 dark:text-gray-300">Show:</label>
+                        <select 
+                            id="itemsPerPage"
+                            bind:value={itemsPerPage}
+                            on:change={() => changeItemsPerPage(itemsPerPage)}
+                            class="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                        >
+                            {#each itemsPerPageOptions as option}
+                                <option value={option}>{option}</option>
+                            {/each}
+                        </select>
+                        <span class="text-sm text-gray-700 dark:text-gray-300">per page</span>
+                    </div>
                     
-                    <span class="text-sm text-gray-700 dark:text-gray-300">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    
-                    <button 
-                        on:click={nextPage}
-                        disabled={currentPage === totalPages}
-                        class="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
-                    >
-                        Next
-                    </button>
+                    <!-- Navigation buttons -->
+                    <div class="flex items-center space-x-2">
+                        <button 
+                            on:click={prevPage}
+                            disabled={currentPage === 1}
+                            class="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
+                        >
+                            Previous
+                        </button>
+                        
+                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        
+                        <button 
+                            on:click={nextPage}
+                            disabled={currentPage === totalPages}
+                            class="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
         {/if}
