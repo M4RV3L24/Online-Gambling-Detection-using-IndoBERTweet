@@ -73,13 +73,31 @@
     let isLoadingMore = false; // Prevent multiple simultaneous loads
     let hasMoreData = true; // Track if more data is available
     
-    // Calculate real-time vote count
-    $: currentVoteCount = allTexts.filter((t) => {
+    // Calculate real-time vote counts
+    $: yesVoteCount = allTexts.filter((t) => {
         return t.votes.some((v) => 
             v.user_id === data.session.user.id && 
-            (v.vote === true || v.vote === false || v.skip === 1)
+            v.vote === true &&
+            (!v.skip || v.skip === 0)
         );
     }).length;
+    
+    $: noVoteCount = allTexts.filter((t) => {
+        return t.votes.some((v) => 
+            v.user_id === data.session.user.id && 
+            v.vote === false &&
+            (!v.skip || v.skip === 0)
+        );
+    }).length;
+    
+    $: skippedCount = allTexts.filter((t) => {
+        return t.votes.some((v) => 
+            v.user_id === data.session.user.id && 
+            v.skip === 1
+        );
+    }).length;
+    
+    $: totalVoteCount = yesVoteCount + noVoteCount + skippedCount;
     
     // Debug: Log initial data
     // console.log('Initial data structure:', { 
@@ -267,8 +285,8 @@
                 alt="Flowbite Logo"
             />
             <span
-                class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"
-                >count: {currentVoteCount}</span
+                class="self-center text-xl font-semibold whitespace-nowrap dark:text-white"
+                >Total: {totalVoteCount} | Yes: {yesVoteCount} | No: {noVoteCount} | Skip: {skippedCount}</span
             >
         </a>
         <div class="flex items-center space-x-6 rtl:space-x-reverse">
