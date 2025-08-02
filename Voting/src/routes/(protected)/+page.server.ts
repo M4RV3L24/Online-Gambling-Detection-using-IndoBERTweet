@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({
     const sortBy = url.searchParams.get("sort") || "id_asc"; // Default sort by id ascending
     const filterBy = url.searchParams.get("filter") || "all"; // Default show all
 
-    // Bangun kueri dasar
+    // Bangun kueri dasar dengan optimasi untuk dataset besar
     let query = supabase
         .from("texts_to_label")
         .select("*, votes:votes(user_id, vote, skip)")
@@ -33,11 +33,8 @@ export const load: PageServerLoad = async ({
         })
         .order(sortColumn, { ascending: sortDirection === "asc" });
 
-    // Eksekusi kueri
-    const { data: texts, error: dbError } = await query;
-
-    // Return all texts for the current user, filtering will be done on the client
-    // const filteredTexts = texts ? texts.slice(0, 200) : [];
+    // Eksekusi kueri dengan limit yang ditingkatkan untuk mengambil semua data
+    const { data: texts, error: dbError } = await query.limit(13900);
 
     const { count: already_vote_count, error: countError } = await supabase
         .from("votes")
@@ -102,7 +99,7 @@ export const actions: Actions = {
 
         return {
             success: true,
-            message: `Vote '${decision.toUpperCase()}' recorded!`,
+            message: `Vote '${String(decision).toUpperCase()}' recorded!`,
         };
     },
     skip: async ({ request, locals: { supabase, safeGetSession } }) => {

@@ -11,6 +11,7 @@
     let initTimeout: any;
     let isTableInitialized = false;
     let lastFilteredTexts: any[] = [];
+    let isProcessing = false; // Add flag to prevent overlapping operations
     
     // Performance cache for button templates
     let buttonTemplateCache = new Map();
@@ -49,7 +50,7 @@
     });
 
     // Reactive statement to handle data changes
-    $: if (filteredTexts && typeof window !== "undefined") {
+    $: if (filteredTexts && typeof window !== "undefined" && !isProcessing) {
         const hasChanged = JSON.stringify(filteredTexts) !== JSON.stringify(lastFilteredTexts);
         if (hasChanged) {
             lastFilteredTexts = [...filteredTexts];
@@ -58,8 +59,10 @@
                 if (initTimeout) clearTimeout(initTimeout);
                 initTimeout = setTimeout(() => {
                     tick().then(async () => {
+                        isProcessing = true;
                         await populateTableBody(); // Wait for completion
                         initDatatable();
+                        isProcessing = false;
                     });
                 }, 20);
             } else {
@@ -70,7 +73,7 @@
     }
 
     function populateTableBody() {
-        if (typeof window === "undefined") return; // Ensure this runs only in the browser
+        if (typeof window === "undefined" || isProcessing) return; // Prevent overlapping calls
         
         const tbody = document.querySelector('#selection-table tbody');
         if (!tbody) return;
@@ -82,8 +85,8 @@
         // Clear existing content
         tbody.innerHTML = '';
         
-        // Batch process rows in chunks to avoid blocking UI
-        const batchSize = 100; // Process 100 rows at a time
+        // Optimized batch size: Use larger batches for better performance with large datasets
+        const batchSize = Math.min(500, filteredTexts.length); // Adaptive batch size
         let currentIndex = 0;
         
         return new Promise<void>((resolve) => {
@@ -99,9 +102,9 @@
                     const buttonHTML = getButtonTemplate(item.id, isAllFilter);
                     
                     row.innerHTML = `
-                        <td class="mx-auto font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.id}</td>
-                        <td class="text-gray-900 dark:text-white"><p>${item.text_content}</p></td>
-                        <td>
+                        <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white text-center">${item.id}</td>
+                        <td class="w-[75%] min-w-52 max-w-[75%] px-4 py-2 text-gray-900 dark:text-white"><p class="break-words">${item.text_content}</p></td>
+                        <td class="px-4 py-2">
                             <div class="inline-flex rounded-md shadow-xs" role="group">
                                 ${buttonHTML}
                             </div>
@@ -209,6 +212,8 @@
     }
 
     function rebuildTable() {
+        if (isProcessing) return; // Prevent overlapping rebuilds
+        
         // Preserve current pagination state
         const currentPage = tableInstance?.currentPage || 1;
         const perPage = tableInstance?.options?.perPage || 10;
@@ -220,6 +225,8 @@
         if (initTimeout) clearTimeout(initTimeout);
         initTimeout = setTimeout(() => {
             tick().then(async () => {
+                isProcessing = true;
+                
                 if (tableInstance) {
                     tableInstance.destroy();
                     
@@ -262,6 +269,8 @@
                     
                     setupEventDelegation();
                 }
+                
+                isProcessing = false;
             });
         }, 20);
     }
@@ -410,13 +419,13 @@
     }
 </script>
 
-<table id="selection-table">
+<table id="selection-table" class="w-full">
     <thead>
         <tr>
             <th
-                class="bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                class="px-4 py-2 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
             >
-                <span class="flex items-center">
+                <span class="flex items-center justify-center">
                     ID
                     <svg
                         class="w-4 h-4 ms-1"
@@ -438,7 +447,7 @@
                 </span>
             </th>
             <th
-                class="bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                class="w-[75%] min-w-52 max-w-[75%] px-4 py-2 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
             >
                 <span class="flex items-center">
                     Comment Text
@@ -462,9 +471,9 @@
                 </span>
             </th>
             <th
-                class="bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                class="px-4 py-2 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
             >
-                <span class="flex items-center">
+                <span class="flex items-center justify-center">
                     Action
                     <svg
                         class="w-4 h-4 ms-1"

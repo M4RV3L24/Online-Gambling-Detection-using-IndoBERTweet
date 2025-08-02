@@ -1,62 +1,5 @@
 <script lang="ts">
     import { Toaster, toast } from "svelte-sonner";
-
-    // Function to load more unvoted data
-    async function loadMoreData() {
-        if (isLoadingMore || !hasMoreData) return;
-        
-        isLoadingMore = true;
-        // console.log('Loading more data...');
-        
-        try {
-            // Get IDs of texts we already have
-            const existingIds = allTexts.map(t => t.id);
-            
-            const response = await fetch('/api/load-more-texts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    excludeIds: existingIds,
-                    limit: 500 // Load 500 more records
-                })
-            });
-            
-            if (response.ok) {
-                const newData = await response.json();
-                if (newData.texts && newData.texts.length > 0) {
-                    // console.log(`Loaded ${newData.texts.length} new texts`);
-                    // Add new texts to our existing array
-                    allTexts = [...allTexts, ...newData.texts.map(t => ({ ...t, votes: [...t.votes] }))];
-                    tableVersion++; // Force re-render
-                } else {
-                    hasMoreData = false;
-                    // console.log('No more data available');
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load more data:', error);
-        } finally {
-            isLoadingMore = false;
-        }
-    }
-
-    // Check if we need to load more data
-    function checkAndLoadMoreData() {
-        const unvotedCount = allTexts.filter((t) => {
-            return (
-                (!t.votes.some((v) => v.user_id === data.session.user.id) &&
-                    !t.votes.some((v) => v.user_id === data.session.user.id && v.skip === 1)) ||
-                t.votes.some((v) => v.user_id === data.session.user.id && (v.skip === 0 || v.skip === null) && v.vote === null)
-            );
-        }).length;
-        
-        // console.log(`Unvoted count: ${unvotedCount}`);
-        
-        // Load more data if unvoted count is low
-        if (unvotedCount < 200 && hasMoreData && !isLoadingMore) {
-            loadMoreData();
-        }
-    };
     import { onMount } from "svelte";
     import { enhance } from "$app/forms";
     import { flip } from "svelte/animate";
@@ -70,8 +13,15 @@
     // Make texts reactive for instant UI updates
     let allTexts = data?.texts ? data.texts.map(t => ({ ...t, votes: [...t.votes] })) : [];
     let tableVersion = 0; // Force table re-render
-    let isLoadingMore = false; // Prevent multiple simultaneous loads
-    let hasMoreData = true; // Track if more data is available
+    
+    // Pagination settings for large datasets
+    let currentPage = 1;
+    let itemsPerPage = 300; // Show 500 items per page for performance
+    
+    // Calculate pagination
+    $: totalPages = Math.ceil((filteredTextsAll?.length || 0) / itemsPerPage);
+    $: startIndex = (currentPage - 1) * itemsPerPage;
+    $: endIndex = startIndex + itemsPerPage;
     
     // Calculate real-time vote counts
     $: yesVoteCount = allTexts.filter((t) => {
@@ -99,16 +49,40 @@
     
     $: totalVoteCount = yesVoteCount + noVoteCount + skippedCount;
     
-    // Debug: Log initial data
-    // console.log('Initial data structure:', { 
-    //     dataExists: !!data, 
-    //     textsCount: data?.texts?.length || 0, 
-    //     allTextsCount: allTexts.length,
-    //     firstText: allTexts[0],
-    //     userID: data?.session?.user?.id
-    // });
+    // Debug: Log data structure and filtering
+    $: {
+        console.log('=== DEBUGGING DATA ===');
+        console.log('Total allTexts:', allTexts.length);
+        console.log('Current filter:', $filter);
+        console.log('User ID:', data?.session?.user?.id);
+        
+        // Sample first few texts for debugging
+        if (allTexts.length > 0) {
+            console.log('Sample text structure:', {
+                id: allTexts[0].id,
+                hasVotes: allTexts[0].votes?.length || 0,
+                firstVote: allTexts[0].votes?.[0]
+            });
+        }
+        
+        // Count unvoted texts manually
+        const unvotedCount = allTexts.filter((t) => {
+            const hasUserVote = t.votes.some((v) => v.user_id === data.session.user.id);
+            const hasUserSkip = t.votes.some((v) => v.user_id === data.session.user.id && v.skip === 1);
+            const hasNullVote = t.votes.some((v) => v.user_id === data.session.user.id && (v.skip === 0 || v.skip === null) && v.vote === null);
+            
+            return (!hasUserVote && !hasUserSkip) || hasNullVote;
+        }).length;
+        
+        console.log('Manual unvoted count:', unvotedCount);
+        console.log('Filtered texts (all):', filteredTextsAll.length);
+        console.log('Filtered texts (paginated):', filteredTexts.length);
+        console.log('Current page:', currentPage, 'of', totalPages);
+        console.log('Showing items:', startIndex + 1, 'to', Math.min(endIndex, filteredTextsAll.length));
+        console.log('=== END DEBUG ===');
+    }
 
-    $: filteredTexts = allTexts
+    $: filteredTextsAll = allTexts
         ? allTexts
               .filter((t) => {
                   if ($filter === "voted_yes") {
@@ -131,26 +105,30 @@
                               v.user_id === data.session.user.id && v.skip === 1
                       );
                   } else {
-                      return (
-                          (!t.votes.some(
-                              (v) => v.user_id === data.session.user.id
-                          ) &&
-                              !t.votes.some(
-                                  (v) =>
-                                      v.user_id === data.session.user.id &&
-                                      v.skip === 1
-                              )) ||
-                          t.votes.some(
-                              (v) =>
-                                  v.user_id === data.session.user.id &&
-                                  (v.skip === 0 || v.skip === null) &&
-                                  v.vote === null
-                          )
+                      // For "all" filter: show texts that have NO user votes at all
+                      // OR texts where user has a null vote (incomplete vote)
+                      const userVotes = t.votes.filter(v => v.user_id === data.session.user.id);
+                      
+                      if (userVotes.length === 0) {
+                          // No votes from this user at all
+                          return true;
+                      }
+                      
+                      // Check if user has any incomplete/null votes
+                      return userVotes.some(v => 
+                          v.vote === null && (v.skip === 0 || v.skip === null)
                       );
                   }
               })
-              .slice(0, 200)
         : [];
+
+    // Paginated filtered texts for display
+    $: filteredTexts = filteredTextsAll.slice(startIndex, endIndex);
+    
+    // Reset to page 1 when filter changes
+    $: if ($filter) {
+        currentPage = 1;
+    }
 
     function onVoteUpdate(textId: number, voteType: 'yes' | 'no' | 'skip' | 'cancel') {
         // console.log('onVoteUpdate called in parent:', { textId, voteType });
@@ -204,9 +182,6 @@
         // console.log('Table version updated to:', tableVersion);
         // console.log('Updated vote count:', currentVoteCount);
         // console.log('Reactivity update complete');
-        
-        // Check if we need to load more data
-        setTimeout(() => checkAndLoadMoreData(), 100);
     }
 
     onMount(() => {
@@ -267,6 +242,28 @@
         filter.set(value);
         // Force table re-render even if same filter is applied
         tableVersion++;
+    }
+
+    // Pagination functions
+    function goToPage(page: number) {
+        if (page >= 1 && page <= totalPages) {
+            currentPage = page;
+            tableVersion++; // Force table re-render
+        }
+    }
+
+    function nextPage() {
+        if (currentPage < totalPages) {
+            currentPage++;
+            tableVersion++;
+        }
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            tableVersion++;
+        }
     }
 
     
@@ -368,11 +365,38 @@
 
 <div class="dark:bg-gray-900 dark:text-white bg-gray-300">
     <div class="container mx-auto p-1 mt-3 mb-10">
-        {#if isLoadingMore}
-            <div class="mb-4 p-4 bg-blue-100 dark:bg-blue-900 rounded-lg text-center">
-                <p class="text-blue-800 dark:text-blue-200">
-                    Loading more data... 🔄
-                </p>
+        <!-- Pagination Controls -->
+        {#if filteredTextsAll.length > itemsPerPage}
+            <div class="mb-4 flex flex-col sm:flex-row justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+                <div class="mb-2 sm:mb-0">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                        Showing <span class="font-semibold">{startIndex + 1}</span> to 
+                        <span class="font-semibold">{Math.min(endIndex, filteredTextsAll.length)}</span> of 
+                        <span class="font-semibold">{filteredTextsAll.length}</span> results
+                    </span>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <button 
+                        on:click={prevPage}
+                        disabled={currentPage === 1}
+                        class="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
+                    >
+                        Previous
+                    </button>
+                    
+                    <span class="text-sm text-gray-700 dark:text-gray-300">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    
+                    <button 
+                        on:click={nextPage}
+                        disabled={currentPage === totalPages}
+                        class="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600"
+                    >
+                        Next
+                    </button>
+                </div>
             </div>
         {/if}
         
