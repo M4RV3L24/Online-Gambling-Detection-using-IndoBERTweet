@@ -103,7 +103,7 @@
                     
                     row.innerHTML = `
                         <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white text-center">${item.id}</td>
-                        <td class="w-[75%] min-w-52 max-w-[75%] px-4 py-2 text-gray-900 dark:text-white"><p class="break-words">${item.text_content}</p></td>
+                        <td class="w-[75%] min-w-52 max-w-[600px] px-4 py-2 text-gray-900 dark:text-white"><p class="break-words">${item.text_content}</p></td>
                         <td class="px-4 py-2">
                             <div class="inline-flex rounded-md shadow-xs" role="group">
                                 ${buttonHTML}
@@ -447,7 +447,7 @@
                 </span>
             </th>
             <th
-                class="w-[75%] min-w-52 max-w-[75%] px-4 py-2 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                class="w-[75%] min-w-52 max-w-[600px] px-4 py-2 bg-white text-gray-800 dark:bg-gray-700 dark:text-gray-200"
             >
                 <span class="flex items-center">
                     Comment Text

@@ -52,18 +52,18 @@
     
     // Debug: Log data structure and filtering
     $: {
-        console.log('=== DEBUGGING DATA ===');
-        console.log('Total allTexts:', allTexts.length);
-        console.log('Current filter:', $filter);
-        console.log('User ID:', data?.session?.user?.id);
+        // console.log('=== DEBUGGING DATA ===');
+        // console.log('Total allTexts:', allTexts.length);
+        // console.log('Current filter:', $filter);
+        // console.log('User ID:', data?.session?.user?.id);
         
         // Sample first few texts for debugging
         if (allTexts.length > 0) {
-            console.log('Sample text structure:', {
-                id: allTexts[0].id,
-                hasVotes: allTexts[0].votes?.length || 0,
-                firstVote: allTexts[0].votes?.[0]
-            });
+            // console.log('Sample text structure:', {
+            //     id: allTexts[0].id,
+            //     hasVotes: allTexts[0].votes?.length || 0,
+            //     firstVote: allTexts[0].votes?.[0]
+            // });
         }
         
         // Count unvoted texts manually
@@ -75,12 +75,12 @@
             return (!hasUserVote && !hasUserSkip) || hasNullVote;
         }).length;
         
-        console.log('Manual unvoted count:', unvotedCount);
-        console.log('Filtered texts (all):', filteredTextsAll.length);
-        console.log('Filtered texts (paginated):', filteredTexts.length);
-        console.log('Current page:', currentPage, 'of', totalPages);
-        console.log('Showing items:', startIndex + 1, 'to', Math.min(endIndex, filteredTextsAll.length));
-        console.log('=== END DEBUG ===');
+        // console.log('Manual unvoted count:', unvotedCount);
+        // console.log('Filtered texts (all):', filteredTextsAll.length);
+        // console.log('Filtered texts (paginated):', filteredTexts.length);
+        // console.log('Current page:', currentPage, 'of', totalPages);
+        // console.log('Showing items:', startIndex + 1, 'to', Math.min(endIndex, filteredTextsAll.length));
+        // console.log('=== END DEBUG ===');
     }
 
     $: filteredTextsAll = allTexts
