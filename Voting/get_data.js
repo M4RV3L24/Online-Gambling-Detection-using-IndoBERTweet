@@ -52,5 +52,5 @@ async function fetchData() {
         console.error('Terjadi kesalahan selama proses pengambilan data:', err.message);
     }
 }
-
+// 10055 data
 fetchData();
