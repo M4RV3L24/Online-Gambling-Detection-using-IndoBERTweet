@@ -1,0 +1,88 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0" version="28.2.5">
+  <diagram name="Page-1" id="Pmz9TWw_uevQzaNP5pHF">
+    <mxGraphModel dx="1149" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="tnNuooqeu-n0Fl8aUVR0-99" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;rounded=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="625" y="296.9999999999998" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tnNuooqeu-n0Fl8aUVR0-100" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;rounded=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="832" y="296.9999999999998" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tnNuooqeu-n0Fl8aUVR0-101" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;rounded=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="1065" y="296.9999999999998" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tnNuooqeu-n0Fl8aUVR0-102" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;rounded=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="1322" y="296.9999999999998" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tnNuooqeu-n0Fl8aUVR0-103" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.99;exitY=0.5;entryX=0;entryY=0.5;rounded=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="1503" y="296.9999999999998" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tnNuooqeu-n0Fl8aUVR0-104" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.49;rounded=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="1746" y="296.9999999999998" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="tnNuooqeu-n0Fl8aUVR0-105" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.99;exitY=0.49;entryX=0.01;entryY=0.51;rounded=0;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="1935.1773533424284" y="297.1541609822648" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-1" value="Input: Preprocessed Text Data" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="175" y="120" width="278" height="63" as="geometry" />
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-2" value="Feature Extraction&#xa;using IndoBERTweet Embedding" style="whiteSpace=wrap;strokeWidth=2;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="503" y="100" width="260" height="102" as="geometry" />
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-3" value="Support Vector Machine&#xa;(RBF Kernel) Classification" style="whiteSpace=wrap;strokeWidth=2;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="800" y="192" width="249" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-4" value="Model Evaluation&#xa;(Stratified K-Fold Cross Validation)" style="whiteSpace=wrap;strokeWidth=2;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="503" y="270" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-10" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;fillColor=none;" edge="1" parent="1" source="h2ttp9oUgY2yrryTO_Td-4" target="h2ttp9oUgY2yrryTO_Td-5">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="250" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-5" value="Output: Classification Metrics" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="175" y="283.5" width="278" height="63" as="geometry" />
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-6" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.49;entryX=0;entryY=0.5;rounded=0;fillColor=none;" edge="1" parent="1" source="h2ttp9oUgY2yrryTO_Td-1" target="h2ttp9oUgY2yrryTO_Td-2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-7" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0.5;entryY=0;rounded=0;entryDx=0;entryDy=0;fillColor=none;" edge="1" parent="1" source="h2ttp9oUgY2yrryTO_Td-2" target="h2ttp9oUgY2yrryTO_Td-3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="h2ttp9oUgY2yrryTO_Td-8" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;rounded=0;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fillColor=none;" edge="1" parent="1" source="h2ttp9oUgY2yrryTO_Td-3" target="h2ttp9oUgY2yrryTO_Td-4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="770" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -58,7 +58,7 @@ async function fetchData() {
 
         console.log(`Mengambil ${filtered.length} baris yang lolos filter dari tabel texts_to_label...`);
         // 2. Simpan data ke file JSON lokal
-        fs.writeFileSync('fetched_data3.json', JSON.stringify(filtered, null, 2));
+        fs.writeFileSync('fetched_data4.json', JSON.stringify(filtered, null, 2));
         console.log('Data berhasil disimpan ke fetched_data.json!');
     } catch (err) {
         console.error('Terjadi kesalahan selama proses pengambilan data:', err.message);

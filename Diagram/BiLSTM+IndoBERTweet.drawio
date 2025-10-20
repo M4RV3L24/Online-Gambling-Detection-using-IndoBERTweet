@@ -1,0 +1,78 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0" version="28.2.7">
+  <diagram name="Page-1" id="ArK8lJlyt5zHuebw0VHW">
+    <mxGraphModel dx="1149" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-16" value="Input: Preprocessed Text Data" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="28" width="278" height="63" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-17" value="Tokenization using &#xa;IndoBERTweet Tokenizer" style="whiteSpace=wrap;strokeWidth=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="348" y="20" width="260" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-18" value="Contextual Embedding&#xa;via IndoBERTweet Model&#xa;input: (16, 128)&#xa;output: (16, 128, 768)" style="whiteSpace=wrap;strokeWidth=2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="658" y="20" width="233" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-19" value="Bidirectional LSTM Layer&#xa;(Sequence Understanding)&#xa;input: (16, 128, 768)&#xa;output: (16, 128, 128)" style="whiteSpace=wrap;strokeWidth=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="650.5" y="144" width="248" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-20" value="Dropout &amp; Flatten Layers&#xa;input: (16, 128, 128)&#xa;output: (16, 16384)" style="whiteSpace=wrap;strokeWidth=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="358" y="162" width="240" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-21" value="Dense Layer&#xa;(Sigmoid Activation)&#xa;input: (16, 16384)&#xa;output: (16, 1)" style="whiteSpace=wrap;strokeWidth=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="80" y="150" width="204" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-22" value="Model Training &amp; Evaluation" style="whiteSpace=wrap;strokeWidth=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="170" y="284.5" width="259" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-23" value="Output: Classification Results" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;strokeWidth=2;whiteSpace=wrap;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="490" y="280" width="278" height="63" as="geometry" />
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-24" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.49;entryX=0;entryY=0.5;rounded=0;fontSize=13;" edge="1" parent="1" source="hvIIPgBlkmuIufUt1maZ-16" target="hvIIPgBlkmuIufUt1maZ-17">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-25" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.5;rounded=0;fontSize=13;" edge="1" parent="1" source="hvIIPgBlkmuIufUt1maZ-17" target="hvIIPgBlkmuIufUt1maZ-18">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-26" value="" style="startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0.994;entryY=0.609;rounded=0;fontSize=13;entryDx=0;entryDy=0;entryPerimeter=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="hvIIPgBlkmuIufUt1maZ-18" target="hvIIPgBlkmuIufUt1maZ-19">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="930" y="59" />
+              <mxPoint x="930" y="198" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-27" value="" style="curved=1;startArrow=none;endArrow=block;exitX=0;exitY=0.5;rounded=0;fontSize=13;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="hvIIPgBlkmuIufUt1maZ-19" target="hvIIPgBlkmuIufUt1maZ-20">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="600" y="189" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-28" value="" style="curved=1;startArrow=none;endArrow=block;rounded=0;fontSize=13;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="hvIIPgBlkmuIufUt1maZ-20">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="360" y="190" as="sourcePoint" />
+            <mxPoint x="280" y="189" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-29" value="" style="startArrow=none;endArrow=block;exitX=0;exitY=0.385;entryX=0;entryY=0.5;rounded=0;fontSize=13;exitDx=0;exitDy=0;exitPerimeter=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="hvIIPgBlkmuIufUt1maZ-21" target="hvIIPgBlkmuIufUt1maZ-22">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="50" y="180" />
+              <mxPoint x="50" y="312" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hvIIPgBlkmuIufUt1maZ-30" value="" style="curved=1;startArrow=none;endArrow=block;exitX=1;exitY=0.5;entryX=0;entryY=0.49;rounded=0;fontSize=13;" edge="1" parent="1" source="hvIIPgBlkmuIufUt1maZ-22" target="hvIIPgBlkmuIufUt1maZ-23">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
