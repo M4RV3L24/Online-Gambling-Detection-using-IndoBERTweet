@@ -24,41 +24,44 @@ async function fetchData() {
             return;
         }
 
-        // Filter: hanya text yang semua votes sama dan tidak ada skip
         const filtered = data.filter(text => {
             const votes = text.votes || [];
-            if (votes.length === 0) return false; // Harus ada vote
+            if (votes.length === 0) return false;
 
-            // Tidak boleh ada skip
+            // Count only non-skipped votes
             if (votes.some(v => v.skip === 1)) return false;
 
-            // Semua vote harus sama (true/false)
-            // const firstVote = votes[0].vote;
-            // return votes.every(v => v.vote === firstVote);
-
+            // Majority agreement (same as your SQL)
             const voteCounts = votes.reduce((acc, v) => {
                 acc[v.vote] = (acc[v.vote] || 0) + 1;
                 return acc;
             }, {});
-            const maxVote = Object.keys(voteCounts).reduce((a, b) => voteCounts[a] > voteCounts[b] ? a : b);
-            const maxCount = voteCounts[maxVote];
-            const totalVotes = votes.length;
 
-            // Cek mayoritas > 50% dan tidak 100%
-            return maxCount > totalVotes / 2;
+            const totalVotes = votes.length;
+            const [maxVote, maxCount] = Object.entries(voteCounts)
+            .reduce((a, b) => (a[1] > b[1] ? a : b)); // majority vote
+
+            // Only include if there is clear majority (>50%)
+            if (maxCount > totalVotes / 2) {
+            text.final_vote = maxVote === 'true' || maxVote === true ? true : false;
+            return true;
+            }
+            return false;
+            // return true
+
         })
         .map(text => {
             // Ambil hanya satu vote (vote pertama)
             return {
                 text: text.text_content,
                 // votes: text.votes
-                votes: text.votes && text.votes.length > 0 ? text.votes[0].vote : null
+                votes: text.final_vote
             };
         });
 
         console.log(`Mengambil ${filtered.length} baris yang lolos filter dari tabel texts_to_label...`);
         // 2. Simpan data ke file JSON lokal
-        fs.writeFileSync('fetched_data5.json', JSON.stringify(filtered, null, 2));
+        fs.writeFileSync('fetched_data4.json', JSON.stringify(filtered, null, 2));
         console.log('Data berhasil disimpan ke fetched_data.json!');
     } catch (err) {
         console.error('Terjadi kesalahan selama proses pengambilan data:', err.message);
