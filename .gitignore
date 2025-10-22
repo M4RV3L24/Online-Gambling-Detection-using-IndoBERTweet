@@ -1,5 +1,5 @@
-/Models/base-model-indobertweet.zip
-/Models/base-model-indoBERTweet
+Models/base-model-indobertweet.zip
+Models/base-model-indobertweet
 
 # Data files
 # *.json
@@ -9,3 +9,5 @@
 # result_RF2/
 # fetched_data*
 # *checkpoint*
+
+Berkas Skripsi/*
