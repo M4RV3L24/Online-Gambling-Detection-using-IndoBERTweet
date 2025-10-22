@@ -1,0 +1,11 @@
+/Models/base-model-indobertweet.zip
+/Models/base-model-indoBERTweet
+
+# Data files
+# *.json
+# *.csv
+# *.pkl
+# *.zip
+# result_RF2/
+# fetched_data*
+# *checkpoint*
