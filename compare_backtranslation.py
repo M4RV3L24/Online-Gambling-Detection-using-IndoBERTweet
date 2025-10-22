@@ -7,14 +7,14 @@ def compare_backtranslation():
         original_data = json.load(f)
     
     # Load back translation data
-    with open('Preprocessing/result/fetched_data_final_checkpoint_500.json', 'r', encoding='utf-8') as f:
+    with open('Preprocessing/result_RF2/fetched_data_final.json', 'r', encoding='utf-8') as f:
         backtranslated_data = json.load(f)
     
     # Create comparison dataframe
     comparison_df = pd.DataFrame({
         # only first 500 data
         'Original': [item['text'] for item in original_data[:500]],
-        'Result': [item['text'] for item in backtranslated_data]
+        'Result': [item['text'] for item in backtranslated_data[:500]]
         # 'Result': backtranslated_data
     })
     
