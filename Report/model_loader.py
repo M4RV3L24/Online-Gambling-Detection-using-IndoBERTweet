@@ -36,31 +36,52 @@ def load_model_components(model_config):
         return {'tokenizer': tokenizer, 'bert_model': bert_model, 'classifier': classifier}
     
     elif model_type == "indobert_bilstm":
-        # Load BiLSTM model
+        # Define BiLSTM architecture
+        import torch.nn as nn
+        
+        class IndoBERTweetBiLSTM(nn.Module):
+            def __init__(self, bert_model, max_length=128):
+                super(IndoBERTweetBiLSTM, self).__init__()
+                self.bert = bert_model
+                self.lstm = nn.LSTM(input_size=768, hidden_size=64, num_layers=1, 
+                                    batch_first=True, bidirectional=True)
+                self.dropout = nn.Dropout(0.3)
+                self.fc = nn.Linear(64 * 2 * max_length, 1)
+                self.sigmoid = nn.Sigmoid()
+
+            def forward(self, input_ids, attention_mask):
+                with torch.no_grad():
+                    outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+                    last_hidden_state = outputs.last_hidden_state
+                lstm_out, _ = self.lstm(last_hidden_state)
+                x = self.dropout(lstm_out)
+                x = x.contiguous().view(x.size(0), -1)
+                x = self.fc(x)
+                return self.sigmoid(x)
+        
+        # Load base IndoBERTweet model
+        tokenizer = AutoTokenizer.from_pretrained(model_config.get('base_model_path', 'indolem/indobertweet-base-uncased'))
+        bert_model = AutoModel.from_pretrained(model_config.get('base_model_path', 'indolem/indobertweet-base-uncased'))
+        
+        # Create BiLSTM model
+        bilstm_model = IndoBERTweetBiLSTM(bert_model)
+        
+        # Load state dict
         checkpoint = torch.load(model_config['bilstm_path'], map_location='cpu')
         
-        # Check if it's a complete model or state dict
         if hasattr(checkpoint, 'eval'):
             # Complete model object
-            bilstm_model = checkpoint
+            return {'bilstm': checkpoint, 'tokenizer': tokenizer}
         elif isinstance(checkpoint, dict):
-            # State dict - try to extract model if available
             if 'model' in checkpoint:
-                bilstm_model = checkpoint['model']
-            elif 'model_state_dict' in checkpoint:
-                st.error("BiLSTM saved as state_dict only. Need complete model or architecture definition.")
-                st.info("Please save the complete model using torch.save(model, path) instead of torch.save(model.state_dict(), path)")
-                return None
+                return {'bilstm': checkpoint['model'], 'tokenizer': tokenizer}
             else:
-                # Assume it's the state dict itself
-                st.error("BiLSTM model is a state dictionary. Need model architecture to load.")
-                st.info("Please provide the complete model file or define the model architecture in code.")
-                return None
+                # Load state dict into model
+                bilstm_model.load_state_dict(checkpoint)
+                return {'bilstm': bilstm_model, 'tokenizer': tokenizer}
         else:
             st.error(f"Unknown BiLSTM model format: {type(checkpoint)}")
             return None
-            
-        return {'bilstm': bilstm_model}
     
     elif model_type == "indobert_finetuned":
         # Load fine-tuned IndoBERTweet directly with PyTorch
@@ -132,14 +153,22 @@ def predict_with_model(model_components, texts, model_config, preprocessed_bert_
     elif model_type == "indobert_bilstm":
         # Use preprocessed texts if available
         processed_texts = preprocessed_bert_texts if preprocessed_bert_texts else [preprocess_bert(text) for text in texts]
-        # Direct prediction with complete BiLSTM model
-        model_components['bilstm'].eval()
+        
+        tokenizer = model_components['tokenizer']
+        bilstm_model = model_components['bilstm']
+        bilstm_model.eval()
+        
         predictions = []
         for text in processed_texts:
+            # Tokenize input
+            inputs = tokenizer(text, padding='max_length', truncation=True, 
+                             max_length=128, return_tensors='pt')
+            
             with torch.no_grad():
-                output = model_components['bilstm'](text)
-                pred = (torch.sigmoid(output) > 0.5).int().item()
-                predictions.append(pred)
+                output = bilstm_model(inputs['input_ids'], inputs['attention_mask'])
+                pred = (output > 0.5).float().item()
+                predictions.append(int(pred))
+        
         return predictions
     
     elif model_type == "indobert_finetuned":
