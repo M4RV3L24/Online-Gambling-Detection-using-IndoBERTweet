@@ -32,26 +32,53 @@ def render_sidebar():
         
         # Upload required files based on architecture
         if config['architecture'] == 'tfidf_rf':
-            vectorizer_file = st.sidebar.file_uploader(f"Upload TF-IDF Vectorizer (pkl)", type=['pkl'], key=f"vec_{model_name}")
-            classifier_file = st.sidebar.file_uploader(f"Upload Random Forest (pkl)", type=['pkl'], key=f"clf_{model_name}")
-            config['vectorizer_file'] = vectorizer_file
-            config['classifier_file'] = classifier_file
+            use_default = st.sidebar.checkbox(f"Use Default Paths", key=f"default_{model_name}")
+            config['use_default'] = use_default
+            
+            if not use_default:
+                vectorizer_file = st.sidebar.file_uploader(f"Upload TF-IDF Vectorizer (pkl)", type=['pkl'], key=f"vec_{model_name}")
+                classifier_file = st.sidebar.file_uploader(f"Upload Random Forest (pkl)", type=['pkl'], key=f"clf_{model_name}")
+                config['vectorizer_file'] = vectorizer_file
+                config['classifier_file'] = classifier_file
+            else:
+                st.sidebar.info(f"Using: Model/rf_tfidf/tfidf_vectorizer.pkl")
+                st.sidebar.info(f"Using: Model/rf_tfidf/rf_model_best.pkl")
             
         elif config['architecture'] in ['indobert_rf', 'indobert_svm']:
-            base_model_path = st.sidebar.text_input(f"Base IndoBERTweet Model Path", key=f"base_{model_name}")
-            classifier_file = st.sidebar.file_uploader(f"Upload Classifier (pkl)", type=['pkl'], key=f"clf_{model_name}")
-            config['base_model_path'] = base_model_path
-            config['classifier_file'] = classifier_file
+            use_default = st.sidebar.checkbox(f"Use Default Paths", key=f"default_{model_name}")
+            config['use_default'] = use_default
+            
+            if not use_default:
+                base_model_path = st.sidebar.text_input(f"Base IndoBERTweet Model Path", key=f"base_{model_name}")
+                classifier_file = st.sidebar.file_uploader(f"Upload Classifier (pkl)", type=['pkl'], key=f"clf_{model_name}")
+                config['base_model_path'] = base_model_path
+                config['classifier_file'] = classifier_file
+            else:
+                arch_name = 'rf' if 'rf' in config['architecture'] else 'svc'
+                config['default_classifier_path'] = f'Model/ml_indobertweet/{arch_name}_model_best.pkl'
+                st.sidebar.info(f"Using: Model/base-model-indobertweet")
+                st.sidebar.info(f"Using: {config['default_classifier_path']}")
             
         elif config['architecture'] == 'indobert_bilstm':
-            base_model_path = st.sidebar.text_input(f"Base IndoBERTweet Model Path", key=f"base_{model_name}")
-            bilstm_file = st.sidebar.file_uploader(f"Upload PyTorch BiLSTM Model", type=['pth', 'pt'], key=f"bilstm_{model_name}")
-            config['base_model_path'] = base_model_path
-            config['bilstm_file'] = bilstm_file
+            use_default = st.sidebar.checkbox(f"Use Default Paths", key=f"default_{model_name}")
+            config['use_default'] = use_default
+            
+            if not use_default:
+                bilstm_file = st.sidebar.file_uploader(f"Upload Complete BiLSTM Model", type=['pt'], key=f"bilstm_{model_name}")
+                config['bilstm_file'] = bilstm_file
+            else:
+                st.sidebar.info(f"Using: Model/indobertweet_bilstm_model.pt")
             
         elif config['architecture'] == 'indobert_finetuned':
-            model_path = st.sidebar.text_input(f"HuggingFace Model Path", key=f"path_{model_name}")
-            config['model_path'] = model_path
+            use_default = st.sidebar.checkbox(f"Use Default Paths", key=f"default_{model_name}")
+            config['use_default'] = use_default
+            
+            if not use_default:
+                model_path = st.sidebar.text_input(f"HuggingFace Model Path", key=f"path_{model_name}")
+                config['model_path'] = model_path
+            else:
+                config['default_model_path'] = 'Model/indobertweet_finetuned_judol'
+                st.sidebar.info(f"Using: {config['default_model_path']}")
         
         models_config.append(config)
     

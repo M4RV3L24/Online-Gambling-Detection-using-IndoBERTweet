@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import tempfile
+import os
 from model_loader import load_model_components, predict_with_model, get_model_configs
 from metrics import calculate_metrics
 from ui_components import (
@@ -32,13 +33,13 @@ def main():
     def has_required_files(config):
         arch = config['architecture']
         if arch == 'tfidf_rf':
-            return config.get('vectorizer_file') and config.get('classifier_file')
+            return config.get('use_default') or (config.get('vectorizer_file') and config.get('classifier_file'))
         elif arch in ['indobert_rf', 'indobert_svm']:
-            return config.get('base_model_path') and config.get('classifier_file')
+            return config.get('use_default') or (config.get('base_model_path') and config.get('classifier_file'))
         elif arch == 'indobert_bilstm':
-            return config.get('base_model_path') and config.get('bilstm_file')
+            return config.get('use_default') or config.get('bilstm_file')
         elif arch == 'indobert_finetuned':
-            return config.get('model_path')
+            return config.get('use_default') or config.get('model_path')
         return False
     
     has_models = any(has_required_files(config) for config in models_config)
@@ -61,26 +62,68 @@ def main():
                     # Prepare config with temporary file paths
                     temp_config = config.copy()
                     
-                    # Save uploaded files temporarily
+                    # Use default paths or uploaded files
                     if config['architecture'] == 'tfidf_rf':
-                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_vec:
-                            tmp_vec.write(config['vectorizer_file'].read())
-                            temp_config['vectorizer_path'] = tmp_vec.name
-                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_clf:
-                            tmp_clf.write(config['classifier_file'].read())
-                            temp_config['classifier_path'] = tmp_clf.name
+                        if config.get('use_default'):
+                            vectorizer_path = 'Model/rf_tfidf/tfidf_vectorizer.pkl'
+                            classifier_path = 'Model/rf_tfidf/rf_model_best.pkl'
+                            
+                            if not os.path.exists(vectorizer_path):
+                                st.error(f"Vectorizer file not found: {vectorizer_path}")
+                                continue
+                            if not os.path.exists(classifier_path):
+                                st.error(f"Classifier file not found: {classifier_path}")
+                                continue
+                                
+                            temp_config['vectorizer_path'] = vectorizer_path
+                            temp_config['classifier_path'] = classifier_path
+                        else:
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_vec:
+                                tmp_vec.write(config['vectorizer_file'].read())
+                                temp_config['vectorizer_path'] = tmp_vec.name
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_clf:
+                                tmp_clf.write(config['classifier_file'].read())
+                                temp_config['classifier_path'] = tmp_clf.name
                             
                     elif config['architecture'] in ['indobert_rf', 'indobert_svm']:
-                        temp_config['base_model_path'] = config['base_model_path']
-                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_clf:
-                            tmp_clf.write(config['classifier_file'].read())
-                            temp_config['classifier_path'] = tmp_clf.name
+                        if config.get('use_default'):
+                            classifier_path = config.get('default_classifier_path')
+                            
+                            if not os.path.exists(classifier_path):
+                                st.error(f"Classifier file not found: {classifier_path}")
+                                continue
+                                
+                            temp_config['base_model_path'] = config.get('default_base_path', 'indolem/indobertweet-base-uncased')
+                            temp_config['classifier_path'] = classifier_path
+                        else:
+                            temp_config['base_model_path'] = config['base_model_path']
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_clf:
+                                tmp_clf.write(config['classifier_file'].read())
+                                temp_config['classifier_path'] = tmp_clf.name
                             
                     elif config['architecture'] == 'indobert_bilstm':
-                        temp_config['base_model_path'] = config['base_model_path']
-                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pth') as tmp_bilstm:
-                            tmp_bilstm.write(config['bilstm_file'].read())
-                            temp_config['bilstm_path'] = tmp_bilstm.name
+                        if config.get('use_default'):
+                            bilstm_path = 'Model/indobertweet_bilstm_model.pt'
+                            
+                            if not os.path.exists(bilstm_path):
+                                st.error(f"BiLSTM model file not found: {bilstm_path}")
+                                continue
+                                
+                            temp_config['bilstm_path'] = bilstm_path
+                        else:
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.pt') as tmp_bilstm:
+                                tmp_bilstm.write(config['bilstm_file'].read())
+                                temp_config['bilstm_path'] = tmp_bilstm.name
+                    
+                    # Set default model path for finetuned
+                    if config['architecture'] == 'indobert_finetuned' and config.get('use_default'):
+                        model_path = config.get('default_model_path')
+                        
+                        if not os.path.exists(model_path):
+                            st.error(f"Fine-tuned model not found: {model_path}")
+                            continue
+                            
+                        temp_config['model_path'] = model_path
                     
                     # Load model components
                     model_components = load_model_components(temp_config)

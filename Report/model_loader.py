@@ -36,16 +36,43 @@ def load_model_components(model_config):
         return {'tokenizer': tokenizer, 'bert_model': bert_model, 'classifier': classifier}
     
     elif model_type == "indobert_bilstm":
-        # Load PyTorch BiLSTM model from Model folder
-        tokenizer = AutoTokenizer.from_pretrained(model_config['base_model_path'])
-        bert_model = AutoModel.from_pretrained(model_config['base_model_path'])
-        bilstm_model = torch.load(model_config['bilstm_path'], map_location='cpu')
-        return {'tokenizer': tokenizer, 'bert_model': bert_model, 'bilstm': bilstm_model}
+        # Load BiLSTM model
+        checkpoint = torch.load(model_config['bilstm_path'], map_location='cpu')
+        
+        # Check if it's a complete model or state dict
+        if hasattr(checkpoint, 'eval'):
+            # Complete model object
+            bilstm_model = checkpoint
+        elif isinstance(checkpoint, dict):
+            # State dict - try to extract model if available
+            if 'model' in checkpoint:
+                bilstm_model = checkpoint['model']
+            elif 'model_state_dict' in checkpoint:
+                st.error("BiLSTM saved as state_dict only. Need complete model or architecture definition.")
+                st.info("Please save the complete model using torch.save(model, path) instead of torch.save(model.state_dict(), path)")
+                return None
+            else:
+                # Assume it's the state dict itself
+                st.error("BiLSTM model is a state dictionary. Need model architecture to load.")
+                st.info("Please provide the complete model file or define the model architecture in code.")
+                return None
+        else:
+            st.error(f"Unknown BiLSTM model format: {type(checkpoint)}")
+            return None
+            
+        return {'bilstm': bilstm_model}
     
     elif model_type == "indobert_finetuned":
-        # Load fine-tuned IndoBERTweet
+        # Load fine-tuned IndoBERTweet directly with PyTorch
         if TRANSFORMERS_AVAILABLE:
-            return pipeline("text-classification", model=model_config['model_path'], tokenizer=model_config['model_path'])
+            try:
+                from transformers import AutoModelForSequenceClassification
+                tokenizer = AutoTokenizer.from_pretrained(model_config['model_path'])
+                model = AutoModelForSequenceClassification.from_pretrained(model_config['model_path'])
+                return {'tokenizer': tokenizer, 'model': model}
+            except Exception as e:
+                st.error(f"Error loading fine-tuned model: {str(e)}")
+                return None
         else:
             st.error("Transformers library not available")
             return None
@@ -71,7 +98,7 @@ def extract_bert_features(texts, tokenizer, bert_model, max_length=128, batch_si
     
     return np.array(features)
 
-def predict_with_model(model_components, texts, model_config):
+def predict_with_model(model_components, texts, model_config, preprocessed_bert_texts=None):
     """Make predictions based on model architecture"""
     model_type = model_config['architecture']
     
@@ -93,8 +120,8 @@ def predict_with_model(model_components, texts, model_config):
         return np.array(all_predictions)
     
     elif model_type in ["indobert_rf", "indobert_svm"]:
-        # Preprocess for BERT
-        processed_texts = [preprocess_bert(text) for text in texts]
+        # Use preprocessed texts if available
+        processed_texts = preprocessed_bert_texts if preprocessed_bert_texts else [preprocess_bert(text) for text in texts]
         # Extract BERT features
         X = extract_bert_features(processed_texts, model_components['tokenizer'], 
                                 model_components['bert_model'])
@@ -103,54 +130,61 @@ def predict_with_model(model_components, texts, model_config):
         return predictions
     
     elif model_type == "indobert_bilstm":
-        # Preprocess for BERT
-        processed_texts = [preprocess_bert(text) for text in texts]
-        # Extract BERT features
-        bert_features = extract_bert_features(processed_texts, model_components['tokenizer'], 
-                                            model_components['bert_model'])
-        # Convert to tensor and predict with PyTorch BiLSTM
-        bert_tensor = torch.tensor(bert_features, dtype=torch.float32)
+        # Use preprocessed texts if available
+        processed_texts = preprocessed_bert_texts if preprocessed_bert_texts else [preprocess_bert(text) for text in texts]
+        # Direct prediction with complete BiLSTM model
         model_components['bilstm'].eval()
-        with torch.no_grad():
-            outputs = model_components['bilstm'](bert_tensor)
-            predictions = (torch.sigmoid(outputs) > 0.5).int().numpy().flatten()
+        predictions = []
+        for text in processed_texts:
+            with torch.no_grad():
+                output = model_components['bilstm'](text)
+                pred = (torch.sigmoid(output) > 0.5).int().item()
+                predictions.append(pred)
         return predictions
     
     elif model_type == "indobert_finetuned":
-        # Preprocess for BERT
-        processed_texts = [preprocess_bert(text) for text in texts]
+        # Use preprocessed texts if available
+        processed_texts = preprocessed_bert_texts if preprocessed_bert_texts else [preprocess_bert(text) for text in texts]
         # Direct prediction with fine-tuned model
-        results = model_components(processed_texts)
-        predictions = [1 if r['label'] == 'LABEL_1' else 0 for r in results]
+        tokenizer = model_components['tokenizer']
+        model = model_components['model']
+        model.eval()
+        
+        predictions = []
+        for text in processed_texts:
+            inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True, max_length=128)
+            with torch.no_grad():
+                outputs = model(**inputs)
+                pred = torch.argmax(outputs.logits, dim=-1).item()
+                predictions.append(pred)
         return predictions
     
     return []
 
 def get_model_configs():
-    """Return predefined model configurations"""
+    """Return predefined model configurations with default paths"""
     return {
         "TF-IDF + Random Forest": {
             "architecture": "tfidf_rf",
-            "vectorizer_path": None,
-            "classifier_path": None
+            "default_vectorizer_path": "Model/rf_tfidf/tfidf_vectorizer.pkl",
+            "default_classifier_path": "Model/rf_tfidf/rf_model_best.pkl"
         },
         "IndoBERTweet + Random Forest": {
             "architecture": "indobert_rf",
-            "base_model_path": None,  # Path to base IndoBERTweet model folder
-            "classifier_path": None   # Path to RF classifier pkl
+            "default_base_path": "Model/base-model-indobertweet",
+            "default_classifier_path": "Model/ml_indobertweet/rf_model_best.pkl"
         },
         "IndoBERTweet + SVM": {
             "architecture": "indobert_svm",
-            "base_model_path": None,  # Path to base IndoBERTweet model folder
-            "classifier_path": None   # Path to SVM classifier pkl
+            "default_base_path": "Model/base-model-indobertweet",
+            "default_classifier_path": "Model/ml_indobertweet/svc_model_best.pkl"
         },
         "IndoBERTweet + BiLSTM": {
             "architecture": "indobert_bilstm",
-            "base_model_path": None,  # Path to base IndoBERTweet model folder
-            "bilstm_path": None       # Path to PyTorch BiLSTM model
+            "default_bilstm_path": "Model/indobertweet_bilstm_model.pt"
         },
         "Fine-tuned IndoBERTweet": {
             "architecture": "indobert_finetuned",
-            "model_path": None        # HuggingFace model path
+            "default_model_path": "Model/indobertweet_finetuned_judol"
         }
     }
