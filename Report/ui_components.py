@@ -7,6 +7,8 @@ from sklearn.metrics import confusion_matrix, classification_report
 
 def render_sidebar():
     """Render sidebar for file uploads and model configuration"""
+    from model_loader import get_model_configs
+    
     st.sidebar.header("Upload Files")
     
     # Test dataset upload
@@ -14,29 +16,44 @@ def render_sidebar():
     
     # Model configuration
     st.sidebar.subheader("Model Configuration")
-    num_models = st.sidebar.number_input("Number of Models", min_value=1, max_value=10, value=3)
+    
+    available_models = get_model_configs()
+    selected_models = st.sidebar.multiselect(
+        "Select Models to Evaluate", 
+        list(available_models.keys()),
+        default=list(available_models.keys())[:3]
+    )
     
     models_config = []
-    for i in range(num_models):
-        st.sidebar.write(f"**Model {i+1}**")
-        name = st.sidebar.text_input(f"Model {i+1} Name", f"Model_{i+1}", key=f"name_{i}")
-        model_type = st.sidebar.selectbox(f"Model {i+1} Type", ["sklearn", "transformer"], key=f"type_{i}")
-        preprocess_type = st.sidebar.selectbox(f"Model {i+1} Preprocessing", ["tfidf", "bert"], key=f"preprocess_{i}")
+    for model_name in selected_models:
+        st.sidebar.write(f"**{model_name}**")
+        config = available_models[model_name].copy()
+        config['name'] = model_name
         
-        if model_type == "transformer":
-            model_path = st.sidebar.text_input(f"Model {i+1} Path/HuggingFace ID", key=f"path_{i}")
-            model_file = None
-        else:
-            model_file = st.sidebar.file_uploader(f"Upload Model {i+1}", type=['pkl', 'joblib'], key=f"file_{i}")
-            model_path = None
+        # Upload required files based on architecture
+        if config['architecture'] == 'tfidf_rf':
+            vectorizer_file = st.sidebar.file_uploader(f"Upload TF-IDF Vectorizer (pkl)", type=['pkl'], key=f"vec_{model_name}")
+            classifier_file = st.sidebar.file_uploader(f"Upload Random Forest (pkl)", type=['pkl'], key=f"clf_{model_name}")
+            config['vectorizer_file'] = vectorizer_file
+            config['classifier_file'] = classifier_file
+            
+        elif config['architecture'] in ['indobert_rf', 'indobert_svm']:
+            base_model_path = st.sidebar.text_input(f"Base IndoBERTweet Model Path", key=f"base_{model_name}")
+            classifier_file = st.sidebar.file_uploader(f"Upload Classifier (pkl)", type=['pkl'], key=f"clf_{model_name}")
+            config['base_model_path'] = base_model_path
+            config['classifier_file'] = classifier_file
+            
+        elif config['architecture'] == 'indobert_bilstm':
+            base_model_path = st.sidebar.text_input(f"Base IndoBERTweet Model Path", key=f"base_{model_name}")
+            bilstm_file = st.sidebar.file_uploader(f"Upload PyTorch BiLSTM Model", type=['pth', 'pt'], key=f"bilstm_{model_name}")
+            config['base_model_path'] = base_model_path
+            config['bilstm_file'] = bilstm_file
+            
+        elif config['architecture'] == 'indobert_finetuned':
+            model_path = st.sidebar.text_input(f"HuggingFace Model Path", key=f"path_{model_name}")
+            config['model_path'] = model_path
         
-        models_config.append({
-            'name': name,
-            'type': model_type,
-            'preprocess': preprocess_type,
-            'file': model_file,
-            'path': model_path
-        })
+        models_config.append(config)
     
     return test_file, models_config
 
@@ -47,9 +64,9 @@ def render_dataset_overview(df):
     with col1:
         st.metric("Total Samples", len(df))
     with col2:
-        st.metric("Spam Count", sum(df['label']))
+        st.metric("Gambling Promotion", sum(df['label']))
     with col3:
-        st.metric("Ham Count", len(df) - sum(df['label']))
+        st.metric("Normal Text", len(df) - sum(df['label']))
 
 def render_metrics_comparison(results):
     """Render performance metrics comparison table"""
@@ -103,8 +120,7 @@ def render_model_config(results):
     for name, data in results.items():
         config_data.append({
             'Model': name,
-            'Type': data['type'],
-            'Preprocessing': data['preprocess']
+            'Architecture': data['architecture']
         })
     config_df = pd.DataFrame(config_data)
     st.dataframe(config_df, use_container_width=True)
@@ -116,6 +132,6 @@ def render_classification_report(results, df):
     
     if selected_model:
         report = classification_report(df['label'], results[selected_model]['predictions'], 
-                                     target_names=['Ham', 'Spam'], output_dict=True)
+                                     target_names=['Normal', 'Gambling'], output_dict=True)
         report_df = pd.DataFrame(report).transpose()
         st.dataframe(report_df.round(4), use_container_width=True)

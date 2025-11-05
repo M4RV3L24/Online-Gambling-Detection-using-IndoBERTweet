@@ -71,16 +71,9 @@ def stem_with_exceptions(text):
 
 
 def preprocess_tfidf(text):
-    slang_dict = {
-        "gk": "tidak",
-        "ga": "tidak",
-        "tdk": "tidak",
-        "aja": "saja",
-        # Add more slang words as needed
-    }
     text_process = convert_emojis(text)
     text_process = normalize_text(text_process)
-    text_process = replace_slang(text_process, slang_dict)
+    text_process = replace_slang(text_process)
     text_process = remove_extra_chars(text_process)
     text_process = text_process.lower()
     text_process = replace_links(text_process)
@@ -90,7 +83,7 @@ def preprocess_tfidf(text):
     tokens = text_process.split()
     stop_words = set(stopwords.words('indonesian'))
     text_process = ' '.join([w for w in tokens if w.lower() not in stop_words])
-    return text
+    return text_process
 
 def preprocess_bert(text):
     """BERT preprocessing pipeline for transformer models"""

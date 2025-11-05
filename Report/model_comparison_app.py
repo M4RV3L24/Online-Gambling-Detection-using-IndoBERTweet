@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import tempfile
-from model_loader import load_model, predict_with_model
+from model_loader import load_model_components, predict_with_model, get_model_configs
 from metrics import calculate_metrics
 from ui_components import (
     render_sidebar, render_dataset_overview, render_metrics_comparison,
@@ -22,13 +22,26 @@ def load_test_data(file_path):
         return pd.read_csv(file_path)
 
 def main():
-    st.title("🔍 Model Performance Comparison Dashboard")
+    st.title("🔍 Online Gambling Promotion Detection - Model Comparison")
+    st.markdown("**Tujuan**: Membandingkan performa model klasifikasi untuk mendeteksi promosi judi online dalam teks")
     
     # Render sidebar
     test_file, models_config = render_sidebar()
     
     # Check if we have test file and at least one model
-    has_models = any(config['file'] is not None or config['path'] for config in models_config)
+    def has_required_files(config):
+        arch = config['architecture']
+        if arch == 'tfidf_rf':
+            return config.get('vectorizer_file') and config.get('classifier_file')
+        elif arch in ['indobert_rf', 'indobert_svm']:
+            return config.get('base_model_path') and config.get('classifier_file')
+        elif arch == 'indobert_bilstm':
+            return config.get('base_model_path') and config.get('bilstm_file')
+        elif arch == 'indobert_finetuned':
+            return config.get('model_path')
+        return False
+    
+    has_models = any(has_required_files(config) for config in models_config)
     
     if test_file and has_models:
         # Load test data
@@ -43,30 +56,42 @@ def main():
         # Load models and make predictions
         results = {}
         for config in models_config:
-            if config['file'] is not None or config['path']:
+            if has_required_files(config):
                 try:
-                    if config['type'] == 'transformer':
-                        if not config['path']:
-                            st.warning(f"No path specified for transformer model {config['name']}")
-                            continue
-                        model = load_model(config['path'], 'transformer')
-                    else:
-                        if config['file'] is None:
-                            continue
-                        # Save uploaded file temporarily
-                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_file:
-                            tmp_file.write(config['file'].read())
-                            tmp_path = tmp_file.name
-                        model = load_model(tmp_path, 'sklearn')
+                    # Prepare config with temporary file paths
+                    temp_config = config.copy()
                     
-                    if model is not None:
-                        predictions = predict_with_model(model, df['text'].tolist(), config['type'], config['preprocess'])
+                    # Save uploaded files temporarily
+                    if config['architecture'] == 'tfidf_rf':
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_vec:
+                            tmp_vec.write(config['vectorizer_file'].read())
+                            temp_config['vectorizer_path'] = tmp_vec.name
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_clf:
+                            tmp_clf.write(config['classifier_file'].read())
+                            temp_config['classifier_path'] = tmp_clf.name
+                            
+                    elif config['architecture'] in ['indobert_rf', 'indobert_svm']:
+                        temp_config['base_model_path'] = config['base_model_path']
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp_clf:
+                            tmp_clf.write(config['classifier_file'].read())
+                            temp_config['classifier_path'] = tmp_clf.name
+                            
+                    elif config['architecture'] == 'indobert_bilstm':
+                        temp_config['base_model_path'] = config['base_model_path']
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pth') as tmp_bilstm:
+                            tmp_bilstm.write(config['bilstm_file'].read())
+                            temp_config['bilstm_path'] = tmp_bilstm.name
+                    
+                    # Load model components
+                    model_components = load_model_components(temp_config)
+                    
+                    if model_components is not None:
+                        predictions = predict_with_model(model_components, df['text'].tolist(), temp_config)
                         metrics = calculate_metrics(df['label'], predictions)
                         results[config['name']] = {
                             'predictions': predictions,
                             'metrics': metrics,
-                            'type': config['type'],
-                            'preprocess': config['preprocess']
+                            'architecture': config['architecture']
                         }
                 except Exception as e:
                     st.error(f"Error loading model {config['name']}: {str(e)}")
