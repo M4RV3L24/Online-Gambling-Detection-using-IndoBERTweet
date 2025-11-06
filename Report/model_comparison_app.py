@@ -3,6 +3,8 @@ import pandas as pd
 import json
 import tempfile
 import os
+import pickle
+from datetime import datetime
 from model_loader import load_model_components, predict_with_model, get_model_configs
 from metrics import calculate_metrics
 from ui_components import (
@@ -22,10 +24,89 @@ def load_test_data(file_path):
     else:
         return pd.read_csv(file_path)
 
+def save_report(results, df, filename):
+    """Save evaluation results to file"""
+    # Ensure Saved directory exists
+    os.makedirs('Saved', exist_ok=True)
+    
+    report_data = {
+        'timestamp': datetime.now().isoformat(),
+        'dataset_info': {
+            'total_samples': len(df),
+            'gambling_samples': sum(df['label']),
+            'normal_samples': len(df) - sum(df['label'])
+        },
+        'results': results,
+        'dataframe': df.to_dict('records')
+    }
+    
+    filepath = os.path.join('Saved', filename)
+    with open(filepath, 'wb') as f:
+        pickle.dump(report_data, f)
+    return True
+
+def load_report(filename):
+    """Load evaluation results from file"""
+    try:
+        filepath = os.path.join('Saved', filename)
+        with open(filepath, 'rb') as f:
+            report_data = pickle.load(f)
+        
+        df = pd.DataFrame(report_data['dataframe'])
+        results = report_data['results']
+        return results, df, report_data.get('timestamp')
+    except Exception as e:
+        st.error(f"Error loading report: {str(e)}")
+        return None, None, None
+
 def main():
     st.title("🔍 Online Gambling Promotion Detection - Model Comparison")
     st.markdown("**Tujuan**: Membandingkan performa model klasifikasi untuk mendeteksi promosi judi online dalam teks")
     
+    # Add mode selection
+    mode = st.radio("Select Mode:", ["New Evaluation", "Load Saved Report"], horizontal=True)
+    
+    if mode == "Load Saved Report":
+        st.subheader("📂 Load Saved Report")
+        
+        # List available reports
+        if os.path.exists('Saved'):
+            report_files = [f for f in os.listdir('Saved') if f.endswith('_report.pkl')]
+        else:
+            report_files = []
+        
+        if report_files:
+            selected_report = st.selectbox("Select Report:", report_files)
+            
+            if st.button("Load Report"):
+                results, df, timestamp = load_report(selected_report)
+                
+                if results and df is not None:
+                    st.success(f"Report loaded successfully! (Created: {timestamp})")
+                    
+                    # Store in session state
+                    st.session_state.results = results
+                    st.session_state.df = df
+                    st.session_state.report_loaded = True
+        else:
+            st.info("No saved reports found. Run a new evaluation first.")
+        
+        # Display loaded report
+        if st.session_state.get('report_loaded') and 'results' in st.session_state:
+            results = st.session_state.results
+            df = st.session_state.df
+            
+            render_dataset_overview(df)
+            render_metrics_comparison(results)
+            render_metrics_visualization(results)
+            render_confusion_matrices(results, df)
+            render_best_model(results)
+            render_model_config(results)
+            render_classification_report(results, df)
+        
+        return
+    
+    # New Evaluation Mode
     # Render sidebar
     test_file, models_config = render_sidebar()
     
@@ -167,6 +248,23 @@ def main():
             df = st.session_state.df
         
         if results:
+            # Add save report functionality
+            st.subheader("💾 Save Report")
+            status = False
+            col1, col2 = st.columns([3, 1], vertical_alignment="bottom")
+            
+            with col1:
+                report_name = st.text_input("Report Name:", value=f"evaluation_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+            
+            with col2:
+                if st.button("Save Report"):
+                    filename = f"{report_name}_report.pkl"
+                    status = save_report(results, df, filename)
+
+            if status:
+                st.success(f"Report saved successfully as {filename}")
+            st.divider()
+            
             render_metrics_comparison(results)
             render_metrics_visualization(results)
             render_confusion_matrices(results, df)
