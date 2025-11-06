@@ -265,33 +265,32 @@ def predict_with_model(model_components, texts, model_config, preprocessed_bert_
     return []
 
 def show_prediction_preview(container, predictions, actual_labels, texts, model_name, processed_count):
-    """Show preview of predictions vs actual labels"""
+    """Show collapsible preview of predictions vs actual labels"""
     with container:
-        st.write(f"**{model_name} - Preview ({processed_count} processed)**")
+        # Quick accuracy calculation
+        correct = sum(1 for i in range(len(predictions)) if i < len(actual_labels) and predictions[i] == actual_labels[i])
+        accuracy = correct / min(len(predictions), len(actual_labels)) * 100
         
-        # Show last 5 predictions
-        preview_data = []
-        start_idx = max(0, len(predictions) - 5)
-        
-        for i in range(start_idx, len(predictions)):
-            if i < len(actual_labels):
-                preview_data.append({
-                    'Index': i + 1,
-                    'Text': texts[i][:50] + '...' if len(texts[i]) > 50 else texts[i],
-                    'Predicted': predictions[i],
-                    'Actual': int(actual_labels[i]),
-                    'Match': '✓' if predictions[i] == actual_labels[i] else '✗'
-                })
-        
-        if preview_data:
-            import pandas as pd
-            df = pd.DataFrame(preview_data)
-            st.dataframe(df, use_container_width=True)
+        # Collapsible expander with accuracy in title
+        with st.expander(f"📊 {model_name} - Preview ({processed_count} processed) - Accuracy: {accuracy:.1f}%", expanded=False):
+            # Show last 5 predictions
+            preview_data = []
+            start_idx = max(0, len(predictions) - 5)
             
-            # Quick accuracy for processed samples
-            correct = sum(1 for i in range(len(predictions)) if i < len(actual_labels) and predictions[i] == actual_labels[i])
-            accuracy = correct / min(len(predictions), len(actual_labels)) * 100
-            st.write(f"Current accuracy: {accuracy:.1f}% ({correct}/{min(len(predictions), len(actual_labels))})")
+            for i in range(start_idx, len(predictions)):
+                if i < len(actual_labels):
+                    preview_data.append({
+                        'Index': i + 1,
+                        'Text': texts[i][:50] + '...' if len(texts[i]) > 50 else texts[i],
+                        'Predicted': predictions[i],
+                        'Actual': int(actual_labels[i]),
+                        'Match': '✓' if predictions[i] == actual_labels[i] else '✗'
+                    })
+            
+            if preview_data:
+                df = pd.DataFrame(preview_data)
+                st.dataframe(df, use_container_width=True)
+                st.write(f"Detailed: {correct}/{min(len(predictions), len(actual_labels))} correct predictions")
 
 def get_model_configs():
     """Return predefined model configurations with default paths"""
