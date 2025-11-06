@@ -12,6 +12,7 @@ from ui_components import (
     render_metrics_visualization, render_confusion_matrices, render_best_model,
     render_model_config, render_classification_report
 )
+from data_analysis import render_data_analysis
 
 st.set_page_config(page_title="Model Performance Comparison", layout="wide")
 
@@ -271,6 +272,7 @@ def main():
             render_best_model(results)
             render_model_config(results)
             render_classification_report(results, df)
+            render_data_analysis(results, df)
 
 if __name__ == "__main__":
     main()
