@@ -155,7 +155,7 @@ def render_model_config(results):
 def render_classification_report(results, df):
     """Render detailed classification report"""
     st.subheader("📋 Detailed Classification Reports")
-    selected_model = st.selectbox("Select Model for Detailed Report", list(results.keys()))
+    selected_model = st.selectbox("Select Model for Detailed Report", list(results.keys()), key="classification_report_selector")
     
     if selected_model:
         report = classification_report(df['label'], results[selected_model]['predictions'], 
