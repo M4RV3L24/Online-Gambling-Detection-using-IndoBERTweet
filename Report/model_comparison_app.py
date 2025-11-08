@@ -39,7 +39,8 @@ def save_report(results, df, filename):
             'normal_samples': len(df) - sum(df['label'])
         },
         'results': results,
-        'dataframe': df.to_dict('records')
+        'dataframe': df.to_dict('records'),
+        'model_configs_cache': st.session_state.get('model_configs_cache', {})
     }
     
     filepath = os.path.join('Saved', filename)
@@ -56,6 +57,19 @@ def load_report(filename):
         
         df = pd.DataFrame(report_data['dataframe'])
         results = report_data['results']
+        # Restore model cache
+        if 'model_configs_cache' in report_data:
+            st.session_state.model_configs_cache = report_data['model_configs_cache']
+            st.session_state.model_components_cache = {}
+            
+            # Reload model components from configs
+            for model_name, config in report_data['model_configs_cache'].items():
+                try:
+                    model_components = load_model_components(config, model_name)
+                    if model_components:
+                        st.session_state.model_components_cache[model_name] = model_components
+                except Exception as e:
+                    st.warning(f"Could not reload model {model_name}: {str(e)}")
         return results, df, report_data.get('timestamp')
     except Exception as e:
         st.error(f"Error loading report: {str(e)}")
@@ -105,6 +119,8 @@ def main():
             render_best_model(results)
             render_model_config(results)
             render_classification_report(results, df)
+            render_data_analysis(results, df)
+            render_text_tester(results)
         
         return
     

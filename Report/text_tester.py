@@ -118,12 +118,14 @@ def predict_single_text(model_components, text, model_config):
     
     elif model_type in ["indobert_rf", "indobert_svm"]:
         from preprocessing import preprocess_bert
-        from model_loader import extract_bert_features_batch
+        from model_loader import extract_bert_features
         
         processed_text = preprocess_bert(text)
-        X = extract_bert_features_batch([processed_text], 
-                                       model_components['tokenizer'], 
-                                       model_components['bert_model'])
+        X = extract_bert_features([processed_text], 
+                         model_components['tokenizer'], 
+                         model_components['bert_model'],
+                         model_config.get('name', 'single_text'))
+
         prediction = model_components['classifier'].predict(X)[0]
         return int(prediction)
     
