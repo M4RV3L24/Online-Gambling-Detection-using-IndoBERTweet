@@ -13,6 +13,7 @@ from ui_components import (
     render_model_config, render_classification_report
 )
 from data_analysis import render_data_analysis
+from text_tester import render_text_tester
 
 st.set_page_config(page_title="Model Performance Comparison", layout="wide")
 
@@ -219,6 +220,15 @@ def main():
                             # Add model name to config to avoid caching conflicts
                             temp_config['name'] = config['name']
                             
+                            # Cache model components for text testing
+                            if 'model_components_cache' not in st.session_state:
+                                st.session_state.model_components_cache = {}
+                            if 'model_configs_cache' not in st.session_state:
+                                st.session_state.model_configs_cache = {}
+                            
+                            st.session_state.model_components_cache[config['name']] = model_components
+                            st.session_state.model_configs_cache[config['name']] = temp_config
+                            
                             # Create section for this model's progress
                             st.subheader(f"Processing {config['name']}")
                             
@@ -273,6 +283,7 @@ def main():
             render_model_config(results)
             render_classification_report(results, df)
             render_data_analysis(results, df)
+            render_text_tester(results)
 
 if __name__ == "__main__":
     main()
