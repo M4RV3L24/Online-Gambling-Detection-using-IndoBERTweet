@@ -14,6 +14,7 @@ from ui_components import (
 )
 from data_analysis import render_data_analysis
 from text_tester import render_text_tester
+from youtube_analyzer import render_youtube_analyzer
 
 st.set_page_config(page_title="Model Performance Comparison", layout="wide")
 
@@ -121,6 +122,7 @@ def main():
             render_classification_report(results, df)
             render_data_analysis(results, df)
             render_text_tester(results)
+            render_youtube_analyzer(results)
         
         return
     
@@ -300,6 +302,7 @@ def main():
             render_classification_report(results, df)
             render_data_analysis(results, df)
             render_text_tester(results)
+            render_youtube_analyzer(results)
 
 if __name__ == "__main__":
     main()
