@@ -2,13 +2,14 @@ import pandas as pd
 import json
 import os
 
-def xlsx_to_json(xlsx_file_path, json_file_path=None):
+def xlsx_to_json(xlsx_file_path, json_file_path=None, include_columns=None):
     """
     Convert Excel (XLSX) file back to JSON format
     
     Args:
         xlsx_file_path (str): Path to the input XLSX file
         json_file_path (str): Path to the output JSON file (optional)
+        include_columns (list): List of column names to include (optional, includes all if None)
     """
     
     # Generate output filename if not provided
@@ -19,6 +20,21 @@ def xlsx_to_json(xlsx_file_path, json_file_path=None):
     try:
         # Read Excel file
         df = pd.read_excel(xlsx_file_path, engine='openpyxl')
+        
+        # Filter columns if specified
+        if include_columns:
+            available_columns = [col for col in include_columns if col in df.columns]
+            missing_columns = [col for col in include_columns if col not in df.columns]
+            
+            if missing_columns:
+                print(f"Warning: Columns not found: {missing_columns}")
+            
+            if available_columns:
+                df = df[available_columns]
+                print(f"Including columns: {available_columns}")
+            else:
+                print("Error: None of the specified columns found in the file")
+                return None
         
         # Convert DataFrame to list of dictionaries
         data = df.to_dict('records')
@@ -42,12 +58,16 @@ def xlsx_to_json(xlsx_file_path, json_file_path=None):
 
 if __name__ == "__main__":
     # Convert the Excel file back to JSON
-    input_file = "../Preprocessing/fetched_data.xlsx"
+    input_file = "./data excel/justified_data.xlsx"
     output_file = "fetched_data_from_excel.json"
+    
+    # Specify which columns to include (set to None to include all columns)
+    columns_to_include = ['votes']  # Adjust this list as needed
+    # columns_to_include = None  # Uncomment this to include all columns
     
     # Check if input file exists
     if os.path.exists(input_file):
-        result = xlsx_to_json(input_file, output_file)
+        result = xlsx_to_json(input_file, output_file, columns_to_include)
         if result:
             print(f"\nConversion completed successfully!")
             print(f"Output file: {result}")
