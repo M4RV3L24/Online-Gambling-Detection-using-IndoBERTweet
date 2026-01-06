@@ -136,35 +136,65 @@ def predict_with_model(model_components, texts, model_config, preprocessed_bert_
     model_name = model_config.get('name', model_type)
     
     if model_type == "tfidf_rf":
-        # Batch preprocessing with progress bar
-        batch_size = 1000
-        all_predictions = []
-        
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        preview_container = st.container()
-        
-        for i in range(0, len(texts), batch_size):
-            batch_texts = texts[i:i+batch_size]
-            # Preprocess batch
-            processed_batch = [preprocess_tfidf(text) for text in batch_texts]
-            # Vectorize batch
-            X_batch = model_components['vectorizer'].transform(processed_batch)
-            # Predict batch
-            batch_predictions = model_components['classifier'].predict(X_batch)
-            all_predictions.extend(batch_predictions)
+        # Check if classifier is a Pipeline (contains both vectorizer and classifier)
+        if hasattr(model_components['classifier'], 'predict') and hasattr(model_components['classifier'], 'steps'):
+            # It's a Pipeline - use raw text directly
+            batch_size = 1000
+            all_predictions = []
             
-            # Update progress
-            progress = min((i + batch_size) / len(texts), 1.0)
-            progress_bar.progress(progress)
-            status_text.text(f"{model_name}: Processed {min(i + batch_size, len(texts))}/{len(texts)} samples")
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            preview_container = st.container()
             
-            # Show preview every 1000 samples
-            if len(all_predictions) >= 1000 and len(all_predictions) % 1000 == 0 and actual_labels is not None:
-                show_prediction_preview(preview_container, all_predictions, actual_labels, 
-                                      texts, model_name, len(all_predictions))
-        
-        return np.array(all_predictions)
+            for i in range(0, len(texts), batch_size):
+                batch_texts = texts[i:i+batch_size]
+                # Preprocess batch
+                processed_batch = [preprocess_tfidf(text) for text in batch_texts]
+                # Predict directly with pipeline
+                batch_predictions = model_components['classifier'].predict(processed_batch)
+                all_predictions.extend(batch_predictions)
+                
+                # Update progress
+                progress = min((i + batch_size) / len(texts), 1.0)
+                progress_bar.progress(progress)
+                status_text.text(f"{model_name}: Processed {min(i + batch_size, len(texts))}/{len(texts)} samples")
+                
+                # Show preview every 1000 samples
+                if len(all_predictions) >= 1000 and len(all_predictions) % 1000 == 0 and actual_labels is not None:
+                    show_prediction_preview(preview_container, all_predictions, actual_labels, 
+                                          texts, model_name, len(all_predictions))
+            
+            return np.array(all_predictions)
+        else:
+            # Separate vectorizer and classifier
+            batch_size = 1000
+            all_predictions = []
+            
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            preview_container = st.container()
+            
+            for i in range(0, len(texts), batch_size):
+                batch_texts = texts[i:i+batch_size]
+                # Preprocess batch
+                processed_batch = [preprocess_tfidf(text) for text in batch_texts]
+                # Vectorize batch
+                X_batch = model_components['vectorizer'].transform(processed_batch)
+                # Predict batch
+                batch_predictions = model_components['classifier'].predict(X_batch)
+                all_predictions.extend(batch_predictions)
+                
+                # Update progress
+                progress = min((i + batch_size) / len(texts), 1.0)
+                progress_bar.progress(progress)
+                status_text.text(f"{model_name}: Processed {min(i + batch_size, len(texts))}/{len(texts)} samples")
+                
+                # Show preview every 1000 samples
+                if len(all_predictions) >= 1000 and len(all_predictions) % 1000 == 0 and actual_labels is not None:
+                    show_prediction_preview(preview_container, all_predictions, actual_labels, 
+                                          texts, model_name, len(all_predictions))
+            
+            return np.array(all_predictions)
     
     elif model_type in ["indobert_rf", "indobert_svm"]:
         # Use preprocessed texts if available
